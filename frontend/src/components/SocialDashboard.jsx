@@ -37,6 +37,19 @@ export default function SocialDashboard({ onBack, onViewProfile }) {
             .catch(console.error);
     };
 
+    const handleUnfriend = async (username) => {
+        if (window.confirm(`Are you sure you want to unfriend ${username}?`)) {
+            try {
+                await SocialService.unfriend(username);
+                refreshData();
+                setStatusMsg(`Unfriended ${username}`);
+                setTimeout(() => setStatusMsg(''), 3000);
+            } catch (err) {
+                setStatusMsg('Error: ' + err.message);
+            }
+        }
+    };
+
     return (
         <div style={{ maxWidth: '800px', margin: '0 auto', padding: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
@@ -66,17 +79,35 @@ export default function SocialDashboard({ onBack, onViewProfile }) {
                         <h3 style={{ marginTop: 0 }}>My Friends ({friends.length})</h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             {friends.length === 0 ? <p style={{ color: '#888' }}>No friends yet. Add some people!</p> : friends.map(friend => (
-                                <div key={friend.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <div>
-                                        <strong>{friend.username}</strong>
+                                <div key={friend.username} style={{
+                                    display: 'flex', alignItems: 'center', gap: '12px', padding: '10px',
+                                    background: 'rgba(255,255,255,0.03)', borderRadius: '8px'
+                                }}>
+                                    <div style={{
+                                        width: '32px', height: '32px', background: 'var(--bg-card)',
+                                        borderRadius: '50%', display: 'flex', alignItems: 'center',
+                                        justifyContent: 'center', fontSize: '1.2rem'
+                                    }}>
+                                        {friend.avatarEmoji || friend.username.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontWeight: 'bold' }}>{friend.displayName || friend.username}</div>
                                         <div style={{ fontSize: '0.7rem', color: '#888' }}>Level {friend.level}</div>
                                     </div>
-                                    <button
-                                        style={{ fontSize: '0.7rem', padding: '4px 8px' }}
-                                        onClick={() => onViewProfile(friend.username)}
-                                    >
-                                        View Profile
-                                    </button>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                            style={{ fontSize: '0.7rem', padding: '4px 8px' }}
+                                            onClick={() => onViewProfile(friend.username)}
+                                        >
+                                            View Profile
+                                        </button>
+                                        <button
+                                            style={{ fontSize: '0.7rem', padding: '4px 8px', background: 'rgba(255,107,107,0.1)', color: '#ff6b6b', border: '1px solid rgba(255,107,107,0.2)' }}
+                                            onClick={() => handleUnfriend(friend.username)}
+                                        >
+                                            Unfriend
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>

@@ -61,6 +61,18 @@ public class SocialController {
         return socialService.getFriends(user);
     }
 
+    @DeleteMapping("/unfriend/{username}")
+    public ResponseEntity<?> unfriend(@PathVariable String username, Principal principal) {
+        User user = userService.findByUsername(principal.getName())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        try {
+            socialService.unfriend(user, username);
+            return ResponseEntity.ok("Unfriended successfully");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     @GetMapping("/feed")
     public List<Activity> getGlobalFeed() {
         return socialService.getGlobalFeed();

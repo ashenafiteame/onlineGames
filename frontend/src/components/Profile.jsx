@@ -2,13 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { ProfileService } from '../services/ProfileService';
 import { AuthService } from '../services/AuthService';
 
-export default function Profile({ username, onBack }) {
+export default function Profile({ username, onBack, onUpdate }) {
     const [profile, setProfile] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [bio, setBio] = useState('');
     const [twitter, setTwitter] = useState('');
     const [discord, setDiscord] = useState('');
     const [github, setGithub] = useState('');
+    const [displayName, setDisplayName] = useState('');
+    const [avatarEmoji, setAvatarEmoji] = useState('👤');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const currentUser = AuthService.getCurrentUser();
@@ -24,6 +26,8 @@ export default function Profile({ username, onBack }) {
                 setTwitter(data.user.twitter || '');
                 setDiscord(data.user.discord || '');
                 setGithub(data.user.github || '');
+                setDisplayName(data.user.displayName || '');
+                setAvatarEmoji(data.user.avatarEmoji || '👤');
                 setLoading(false);
             })
             .catch(err => {
@@ -34,7 +38,7 @@ export default function Profile({ username, onBack }) {
     }, [username]);
 
     const handleSaveProfile = () => {
-        const profileData = { bio, twitter, discord, github };
+        const profileData = { bio, twitter, discord, github, displayName, avatarEmoji };
         ProfileService.updateProfile(profileData)
             .then(updatedUser => {
                 setProfile(prev => ({ ...prev, user: updatedUser }));
@@ -43,6 +47,7 @@ export default function Profile({ username, onBack }) {
                 if (isOwnProfile) {
                     const localUser = AuthService.getCurrentUser();
                     localStorage.setItem('user', JSON.stringify({ ...localUser, ...updatedUser }));
+                    if (onUpdate) onUpdate();
                 }
             })
             .catch(console.error);
@@ -66,12 +71,17 @@ export default function Profile({ username, onBack }) {
                     <div style={{
                         width: '80px', height: '80px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                         borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '2rem', fontWeight: 'bold', color: 'white', border: '4px solid rgba(255,255,255,0.1)'
+                        fontSize: '3rem', color: 'white', border: '4px solid rgba(255,255,255,0.1)'
                     }}>
-                        {user.username.charAt(0).toUpperCase()}
+                        {isEditing ? avatarEmoji : (user.avatarEmoji || user.username.charAt(0).toUpperCase())}
                     </div>
                     <div>
-                        <h2 style={{ margin: 0, fontSize: '2rem' }}>{user.username}</h2>
+                        <h2 style={{ margin: 0, fontSize: '2rem' }}>
+                            {isEditing ? (displayName || user.username) : (user.displayName || user.username)}
+                        </h2>
+                        {(isEditing ? displayName : user.displayName) && (
+                            <div style={{ fontSize: '0.9rem', color: '#666', marginTop: '-4px' }}>@{user.username}</div>
+                        )}
                         <div style={{ display: 'flex', gap: '1rem', color: '#888', marginTop: '0.25rem' }}>
                             <span>Level {user.level}</span>
                             <span>•</span>
@@ -93,7 +103,39 @@ export default function Profile({ username, onBack }) {
                             )}
                         </div>
                         {isEditing ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '4px' }}>Display Name</label>
+                                        <input
+                                            value={displayName}
+                                            onChange={(e) => setDisplayName(e.target.value)}
+                                            placeholder="Gamer Name"
+                                            style={{ width: '100%', background: '#333', border: '1px solid #444', color: 'white', padding: '0.5rem', borderRadius: '8px' }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '4px' }}>Avatar Emoji</label>
+                                        <div style={{
+                                            display: 'flex', flexWrap: 'wrap', gap: '8px', padding: '8px',
+                                            background: '#333', borderRadius: '8px', border: '1px solid #444'
+                                        }}>
+                                            {['👤', '🎮', '🐱', '🚀', '💎', '🍕', '🔥', '🌈', '⚡️', '🛡️', '🗡️', '🤖', '👾', '🐉', '🐼', '🦄'].map(emoji => (
+                                                <span
+                                                    key={emoji}
+                                                    onClick={() => setAvatarEmoji(emoji)}
+                                                    style={{
+                                                        cursor: 'pointer', fontSize: '1.2rem', padding: '4px',
+                                                        borderRadius: '4px', background: avatarEmoji === emoji ? '#444' : 'transparent',
+                                                        border: avatarEmoji === emoji ? '1px solid var(--primary)' : '1px solid transparent'
+                                                    }}
+                                                >
+                                                    {emoji}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
                                 <div>
                                     <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '4px' }}>Bio</label>
                                     <textarea

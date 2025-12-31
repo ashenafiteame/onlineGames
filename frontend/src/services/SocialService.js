@@ -53,5 +53,15 @@ export const SocialService = {
         });
         if (!response.ok) throw new Error('Failed to accept request');
         return response.text();
+    },
+
+    unfriend: async (username) => {
+        const authHeader = AuthService.getAuthHeader();
+        const response = await fetch(`${API_URL}/api/social/unfriend/${username}`, {
+            method: 'DELETE',
+            headers: authHeader ? { 'Authorization': authHeader } : {}
+        });
+        if (!response.ok) throw new Error('Failed to unfriend');
+        return response.text();
     }
 };

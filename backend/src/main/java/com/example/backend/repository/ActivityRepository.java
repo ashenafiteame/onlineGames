@@ -1,6 +1,7 @@
 package com.example.backend.repository;
 
 import com.example.backend.entity.Activity;
+import com.example.backend.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -10,5 +11,7 @@ import java.util.List;
 public interface ActivityRepository extends JpaRepository<Activity, Long> {
     List<Activity> findTop50ByOrderByCreatedAtDesc();
 
-    List<Activity> findByUserOrderByCreatedAtDesc(com.example.backend.entity.User user);
+    List<Activity> findByUserOrderByCreatedAtDesc(User user);
+
+    void deleteByUser(User user);
 }

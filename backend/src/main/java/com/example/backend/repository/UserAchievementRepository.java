@@ -13,5 +13,7 @@ import java.util.Optional;
 public interface UserAchievementRepository extends JpaRepository<UserAchievement, Long> {
     List<UserAchievement> findByUser(User user);
 
+    void deleteByUser(User user);
+
     Optional<UserAchievement> findByUserAndAchievement(User user, Achievement achievement);
 }

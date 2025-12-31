@@ -45,4 +45,9 @@ public class ScoreController {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         return scoreService.getUserScores(user);
     }
+
+    @GetMapping("/leaderboard")
+    public List<User> getLeaderboard() {
+        return userService.getTopUsersByScore();
+    }
 }

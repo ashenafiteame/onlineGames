@@ -12,6 +12,8 @@ import java.util.List;
 public interface ScoreRepository extends JpaRepository<Score, Long> {
     List<Score> findByUser(User user);
 
+    void deleteByUser(User user);
+
     List<Score> findTop10ByOrderByScoreValueDesc();
 
     void deleteByGame(Game game);

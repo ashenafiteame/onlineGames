@@ -1,7 +1,7 @@
 package com.example.backend.service;
 
 import com.example.backend.entity.User;
-import com.example.backend.repository.UserRepository;
+import com.example.backend.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,6 +17,21 @@ public class UserService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private ScoreRepository scoreRepository;
+
+    @Autowired
+    private ActivityRepository activityRepository;
+
+    @Autowired
+    private UserAchievementRepository userAchievementRepository;
+
+    @Autowired
+    private FriendshipRepository friendshipRepository;
+
+    @Autowired
+    private FriendRequestRepository friendRequestRepository;
 
     public Optional<User> findByUsername(String username) {
         return userRepository.findByUsername(username);
@@ -48,8 +63,18 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    @org.springframework.transaction.annotation.Transactional
     public void deleteUser(Long id) {
-        userRepository.deleteById(id);
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+
+        scoreRepository.deleteByUser(user);
+        activityRepository.deleteByUser(user);
+        userAchievementRepository.deleteByUser(user);
+        friendshipRepository.deleteByAnyUser(user);
+        friendRequestRepository.deleteByAnyUser(user);
+
+        userRepository.delete(user);
     }
 
     public User toggleUserRole(Long id) {

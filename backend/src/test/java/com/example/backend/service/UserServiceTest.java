@@ -1,7 +1,7 @@
 package com.example.backend.service;
 
 import com.example.backend.entity.User;
-import com.example.backend.repository.UserRepository;
+import com.example.backend.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +25,21 @@ class UserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private ScoreRepository scoreRepository;
+
+    @Mock
+    private ActivityRepository activityRepository;
+
+    @Mock
+    private UserAchievementRepository userAchievementRepository;
+
+    @Mock
+    private FriendshipRepository friendshipRepository;
+
+    @Mock
+    private FriendRequestRepository friendRequestRepository;
+
     @InjectMocks
     private UserService userService;
 
@@ -37,6 +52,23 @@ class UserServiceTest {
         user.setUsername("testuser");
         user.setPassword("password");
         user.setRole("USER");
+    }
+
+    @Test
+    void deleteUser_Success() {
+        // Arrange
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        // Act
+        userService.deleteUser(1L);
+
+        // Assert
+        verify(scoreRepository, times(1)).deleteByUser(user);
+        verify(activityRepository, times(1)).deleteByUser(user);
+        verify(userAchievementRepository, times(1)).deleteByUser(user);
+        verify(friendshipRepository, times(1)).deleteByAnyUser(user);
+        verify(friendRequestRepository, times(1)).deleteByAnyUser(user);
+        verify(userRepository, times(1)).delete(user);
     }
 
     @Test

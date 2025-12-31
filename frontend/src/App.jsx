@@ -16,6 +16,7 @@ import { SocialService } from './services/SocialService';
 import SocialDashboard from './components/SocialDashboard';
 import ActivityFeed from './components/ActivityFeed';
 import Profile from './components/Profile';
+import Leaderboard from './components/Leaderboard';
 
 function App() {
   const [user, setUser] = useState(AuthService.getCurrentUser());
@@ -24,6 +25,10 @@ function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [scores, setScores] = useState([]);
   const [achievements, setAchievements] = useState([]);
+
+  const refreshUser = () => {
+    setUser(AuthService.getCurrentUser());
+  };
 
   useEffect(() => {
     if (user) {
@@ -86,7 +91,10 @@ function App() {
         return <Profile
           username={selectedProfile}
           onBack={() => setView(selectedProfile === user.username ? 'library' : 'social')}
+          onUpdate={refreshUser}
         />;
+      case 'leaderboard':
+        return <Leaderboard onBack={() => setView('library')} />;
       case 'library':
         return (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '2rem', alignItems: 'start' }}>
@@ -124,7 +132,7 @@ function App() {
                 setView('profile');
               }}
             >
-              <div style={{ fontWeight: 'bold' }}>{user.username}</div>
+              <div style={{ fontWeight: 'bold' }}>{user.displayName || user.username}</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>
                 {isAdmin && <span style={{ background: '#764ba2', padding: '0.15rem 0.4rem', borderRadius: '4px', marginRight: '0.5rem', fontSize: '0.7rem' }}>ADMIN</span>}
                 Level {user.level || 1} • Score: {user.totalScore || 0}
@@ -141,10 +149,24 @@ function App() {
                 ))}
               </div>
             </div>
+            <div
+              style={{
+                width: '40px', height: '40px', background: 'var(--bg-card)', borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem',
+                border: '2px solid rgba(255,255,255,0.1)', cursor: 'pointer'
+              }}
+              onClick={() => {
+                setSelectedProfile(user.username);
+                setView('profile');
+              }}
+            >
+              {user.avatarEmoji || user.username.charAt(0).toUpperCase()}
+            </div>
             {isAdmin && (
               <button onClick={() => setView('admin')} style={{ background: '#2d3748' }}>🛡️ Admin</button>
             )}
             <button onClick={() => setView('social')} style={{ background: '#2c5282' }}>👥 Social</button>
+            <button onClick={() => setView('leaderboard')} style={{ background: '#744210', color: '#ecc94b' }}>🏆 Rank</button>
             <button onClick={() => setShowHelp(true)} style={{ background: '#444' }}>?</button>
             <button onClick={handleLogout} style={{ background: '#3a1c1c', color: '#ff6b6b' }}>Logout</button>
           </div>

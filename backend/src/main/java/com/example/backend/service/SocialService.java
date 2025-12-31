@@ -45,6 +45,10 @@ public class SocialService {
             throw new RuntimeException("Request already pending");
         }
 
+        if (friendshipRepository.findByUsers(sender, receiver).isPresent()) {
+            throw new RuntimeException("Already friends");
+        }
+
         FriendRequest request = new FriendRequest(null, sender, receiver, FriendRequest.RequestStatus.PENDING,
                 LocalDateTime.now());
         friendRequestRepository.save(request);
@@ -57,6 +61,12 @@ public class SocialService {
 
         if (!request.getReceiver().getId().equals(receiver.getId())) {
             throw new RuntimeException("Unauthorized");
+        }
+
+        if (friendshipRepository.findByUsers(request.getSender(), request.getReceiver()).isPresent()) {
+            request.setStatus(FriendRequest.RequestStatus.ACCEPTED);
+            friendRequestRepository.save(request);
+            return; // Already friends, just close the request
         }
 
         request.setStatus(FriendRequest.RequestStatus.ACCEPTED);
@@ -74,7 +84,7 @@ public class SocialService {
     }
 
     public List<User> getFriends(User user) {
-        return friendshipRepository.findAllByUser(user).stream()
+        return friendshipRepository.findByAnyUser(user).stream()
                 .map(f -> f.getUser1().getId().equals(user.getId()) ? f.getUser2() : f.getUser1())
                 .collect(Collectors.toList());
     }
@@ -83,6 +93,17 @@ public class SocialService {
     public void logActivity(User user, String type, String content) {
         Activity activity = new Activity(null, user, type, content, LocalDateTime.now());
         activityRepository.save(activity);
+    }
+
+    @Transactional
+    public void unfriend(User user, String friendUsername) {
+        User friend = userRepository.findByUsername(friendUsername)
+                .orElseThrow(() -> new RuntimeException("User not found: " + friendUsername));
+
+        friendshipRepository.deleteByUsers(user, friend);
+
+        logActivity(user, "UNFRIEND", "is no longer friends with " + friend.getUsername());
+        logActivity(friend, "UNFRIEND", "is no longer friends with " + user.getUsername());
     }
 
     public List<Activity> getGlobalFeed() {

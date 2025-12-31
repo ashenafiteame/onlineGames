@@ -35,5 +35,14 @@ export const GameService = {
         });
         if (!response.ok) throw new Error('Failed to fetch scores');
         return response.json();
+    },
+
+    getLeaderboard: async () => {
+        const authHeader = AuthService.getAuthHeader();
+        const response = await fetch(`${API_URL}/api/scores/leaderboard`, {
+            headers: authHeader ? { 'Authorization': authHeader } : {}
+        });
+        if (!response.ok) throw new Error('Failed to fetch leaderboard');
+        return response.json();
     }
 };
