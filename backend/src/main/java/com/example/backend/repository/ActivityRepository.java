@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface ActivityRepository extends JpaRepository<Activity, Long> {
     List<Activity> findTop50ByOrderByCreatedAtDesc();
+
+    List<Activity> findByUserOrderByCreatedAtDesc(com.example.backend.entity.User user);
 }

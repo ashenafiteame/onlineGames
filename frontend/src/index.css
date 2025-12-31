@@ -39,6 +39,7 @@ h1 {
   line-height: 1.1;
   background: -webkit-linear-gradient(315deg, #42d392 25%, #647eff);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 2rem;
 }
@@ -66,7 +67,8 @@ button:focus-visible {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-input, textarea {
+input,
+textarea {
   background-color: #1a1a1a;
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -80,7 +82,8 @@ input, textarea {
   transition: border-color 0.3s ease;
 }
 
-input:focus, textarea:focus {
+input:focus,
+textarea:focus {
   outline: none;
   border-color: var(--primary);
 }
@@ -145,4 +148,62 @@ input:focus, textarea:focus {
   background-color: var(--primary);
   color: white;
   margin-bottom: 0.5rem;
+}
+
+/* Custom Tooltip Styling */
+[data-tooltip] {
+  position: relative;
+  cursor: help;
+}
+
+[data-tooltip]::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 140%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a1a1a;
+  color: #fff;
+  padding: 10px 14px;
+  border-radius: 8px;
+  white-space: pre-wrap;
+  width: max-content;
+  max-width: 250px;
+  font-size: 0.75rem;
+  z-index: 10000;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  line-height: 1.5;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+[data-tooltip]:hover::before {
+  opacity: 1;
+  visibility: visible;
+  bottom: 130%;
+}
+
+[data-tooltip]::after {
+  content: '';
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #1a1a1a;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10000;
+  pointer-events: none;
+}
+
+[data-tooltip]:hover::after {
+  opacity: 1;
+  visibility: visible;
+  bottom: 115%;
 }

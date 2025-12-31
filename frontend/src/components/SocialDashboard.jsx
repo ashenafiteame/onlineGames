@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { SocialService } from '../services/SocialService';
 
-export default function SocialDashboard({ onBack }) {
+export default function SocialDashboard({ onBack, onViewProfile }) {
     const [friends, setFriends] = useState([]);
     const [requests, setRequests] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -71,7 +71,12 @@ export default function SocialDashboard({ onBack }) {
                                         <strong>{friend.username}</strong>
                                         <div style={{ fontSize: '0.7rem', color: '#888' }}>Level {friend.level}</div>
                                     </div>
-                                    <button style={{ fontSize: '0.7rem', padding: '4px 8px' }} onClick={() => alert("Profile View TBD")}>View Profile</button>
+                                    <button
+                                        style={{ fontSize: '0.7rem', padding: '4px 8px' }}
+                                        onClick={() => onViewProfile(friend.username)}
+                                    >
+                                        View Profile
+                                    </button>
                                 </div>
                             ))}
                         </div>

@@ -15,10 +15,12 @@ import { AchievementService } from './services/AchievementService';
 import { SocialService } from './services/SocialService';
 import SocialDashboard from './components/SocialDashboard';
 import ActivityFeed from './components/ActivityFeed';
+import Profile from './components/Profile';
 
 function App() {
   const [user, setUser] = useState(AuthService.getCurrentUser());
   const [view, setView] = useState('login');
+  const [selectedProfile, setSelectedProfile] = useState(null);
   const [showHelp, setShowHelp] = useState(false);
   const [scores, setScores] = useState([]);
   const [achievements, setAchievements] = useState([]);
@@ -73,7 +75,18 @@ function App() {
       case 'admin':
         return <AdminDashboard onBack={() => setView('library')} />;
       case 'social':
-        return <SocialDashboard onBack={() => setView('library')} />;
+        return <SocialDashboard
+          onBack={() => setView('library')}
+          onViewProfile={(username) => {
+            setSelectedProfile(username);
+            setView('profile');
+          }}
+        />;
+      case 'profile':
+        return <Profile
+          username={selectedProfile}
+          onBack={() => setView(selectedProfile === user.username ? 'library' : 'social')}
+        />;
       case 'library':
         return (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '2rem', alignItems: 'start' }}>
@@ -104,7 +117,13 @@ function App() {
         <h1>🕹️ Online Game Studio</h1>
         {user && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div style={{ textAlign: 'right' }}>
+            <div
+              style={{ textAlign: 'right', cursor: 'pointer' }}
+              onClick={() => {
+                setSelectedProfile(user.username);
+                setView('profile');
+              }}
+            >
               <div style={{ fontWeight: 'bold' }}>{user.username}</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>
                 {isAdmin && <span style={{ background: '#764ba2', padding: '0.15rem 0.4rem', borderRadius: '4px', marginRight: '0.5rem', fontSize: '0.7rem' }}>ADMIN</span>}
@@ -112,7 +131,11 @@ function App() {
               </div>
               <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', marginTop: '4px' }}>
                 {achievements.map((a, i) => (
-                  <span key={i} title={a.name + ": " + a.description} style={{ fontSize: '1.2rem', cursor: 'help' }}>
+                  <span
+                    key={i}
+                    data-tooltip={`${a.name}\n${a.description}`}
+                    style={{ fontSize: '1.2rem' }}
+                  >
                     {a.badge}
                   </span>
                 ))}

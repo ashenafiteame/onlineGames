@@ -24,4 +24,8 @@ public class User {
     private String role;
     private Integer level = 1;
     private Integer totalScore = 0;
+    private String bio;
+    private String twitter;
+    private String discord;
+    private String github;
 }
