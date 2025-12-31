@@ -25,6 +25,8 @@ function App() {
   const [showHelp, setShowHelp] = useState(false);
   const [scores, setScores] = useState([]);
   const [achievements, setAchievements] = useState([]);
+  const [showMenu, setShowMenu] = useState(false);
+
 
   const refreshUser = () => {
     setUser(AuthService.getCurrentUser());
@@ -149,26 +151,97 @@ function App() {
                 ))}
               </div>
             </div>
-            <div
-              style={{
-                width: '40px', height: '40px', background: 'var(--bg-card)', borderRadius: '50%',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem',
-                border: '2px solid rgba(255,255,255,0.1)', cursor: 'pointer'
-              }}
-              onClick={() => {
-                setSelectedProfile(user.username);
-                setView('profile');
-              }}
-            >
-              {user.avatarEmoji || user.username.charAt(0).toUpperCase()}
+            <div style={{ position: 'relative' }}>
+              <button
+                onClick={() => setShowMenu(!showMenu)}
+                style={{
+                  background: 'rgba(255,255,255,0.05)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  padding: '0.6rem 1rem',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontSize: '1.2rem',
+                  transition: 'all 0.2s'
+                }}
+              >
+                {user.avatarEmoji || '👤'}
+                <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{showMenu ? '▲' : '▼'}</span>
+              </button>
+
+              {showMenu && (
+                <>
+                  <div
+                    style={{ position: 'fixed', inset: 0, zIndex: 90 }}
+                    onClick={() => setShowMenu(false)}
+                  />
+                  <div style={{
+                    position: 'absolute',
+                    top: 'calc(100% + 10px)',
+                    right: 0,
+                    background: '#242424',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '12px',
+                    padding: '8px',
+                    width: '200px',
+                    zIndex: 100,
+                    boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '4px'
+                  }}>
+                    <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '4px' }}>
+                      <div style={{ fontSize: '0.7rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Account</div>
+                      <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{user.displayName || user.username}</div>
+                    </div>
+                    {isAdmin && (
+                      <button
+                        onClick={() => { setView('admin'); setShowMenu(false); }}
+                        style={{ background: 'transparent', textAlign: 'left', padding: '10px 12px', fontSize: '0.9rem', color: '#a0aec0' }}
+                        onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
+                        onMouseOut={(e) => e.target.style.background = 'transparent'}
+                      >
+                        🛡️ Admin Dashboard
+                      </button>
+                    )}
+                    <button
+                      onClick={() => { setView('social'); setShowMenu(false); }}
+                      style={{ background: 'transparent', textAlign: 'left', padding: '10px 12px', fontSize: '0.9rem' }}
+                      onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
+                      onMouseOut={(e) => e.target.style.background = 'transparent'}
+                    >
+                      👥 Social Hub
+                    </button>
+                    <button
+                      onClick={() => { setView('leaderboard'); setShowMenu(false); }}
+                      style={{ background: 'transparent', textAlign: 'left', padding: '10px 12px', fontSize: '0.9rem' }}
+                      onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
+                      onMouseOut={(e) => e.target.style.background = 'transparent'}
+                    >
+                      🏆 Rankings
+                    </button>
+                    <button
+                      onClick={() => { setShowHelp(true); setShowMenu(false); }}
+                      style={{ background: 'transparent', textAlign: 'left', padding: '10px 12px', fontSize: '0.9rem' }}
+                      onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
+                      onMouseOut={(e) => e.target.style.background = 'transparent'}
+                    >
+                      ❓ Help & Guide
+                    </button>
+                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
+                    <button
+                      onClick={handleLogout}
+                      style={{ background: 'transparent', textAlign: 'left', padding: '10px 12px', fontSize: '0.9rem', color: '#ff6b6b' }}
+                      onMouseOver={(e) => e.target.style.background = 'rgba(255,107,107,0.1)'}
+                      onMouseOut={(e) => e.target.style.background = 'transparent'}
+                    >
+                      🚪 Logout
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
-            {isAdmin && (
-              <button onClick={() => setView('admin')} style={{ background: '#2d3748' }}>🛡️ Admin</button>
-            )}
-            <button onClick={() => setView('social')} style={{ background: '#2c5282' }}>👥 Social</button>
-            <button onClick={() => setView('leaderboard')} style={{ background: '#744210', color: '#ecc94b' }}>🏆 Rank</button>
-            <button onClick={() => setShowHelp(true)} style={{ background: '#444' }}>?</button>
-            <button onClick={handleLogout} style={{ background: '#3a1c1c', color: '#ff6b6b' }}>Logout</button>
           </div>
         )}
       </div>

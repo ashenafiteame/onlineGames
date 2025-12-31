@@ -1,8 +1,9 @@
 import { AuthService } from './AuthService';
+import { API_BASE_URL } from './config';
 
 export const ProfileService = {
     getProfile: async (username) => {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8081'}/api/profiles/${username}`, {
+        const response = await fetch(`${API_BASE_URL}/api/profiles/${username}`, {
             headers: {
                 'Authorization': AuthService.getAuthHeader()
             }
@@ -15,7 +16,7 @@ export const ProfileService = {
     },
 
     updateProfile: async (profileData) => {
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8081'}/api/profiles/me`, {
+        const response = await fetch(`${API_BASE_URL}/api/profiles/me`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

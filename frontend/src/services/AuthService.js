@@ -1,6 +1,6 @@
-const API_URL = import.meta.env.VITE_API_URL
-    ? `${import.meta.env.VITE_API_URL}/api/auth`
-    : 'http://localhost:8081/api/auth';
+import { API_BASE_URL } from './config';
+
+const API_URL = `${API_BASE_URL}/api/auth`;
 
 export const AuthService = {
     login: async (username, password) => {
