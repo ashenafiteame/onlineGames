@@ -34,6 +34,10 @@ const getChessBoard = () => {
     ];
 };
 
+const getTicTacToeBoard = () => {
+    return Array(9).fill(null);
+};
+
 export default function OnlinePanel({ onStartMatch }) {
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [matches, setMatches] = useState([]);
@@ -59,7 +63,10 @@ export default function OnlinePanel({ onStartMatch }) {
     };
 
     const handleChallenge = (username, gameType) => {
-        const board = gameType === 'chess' ? getChessBoard() : getCheckersBoard();
+        let board;
+        if (gameType === 'chess') board = getChessBoard();
+        else if (gameType === 'tictactoe') board = getTicTacToeBoard();
+        else board = getCheckersBoard();
 
         MatchService.invite(username, JSON.stringify(board), gameType)
             .then(() => {
@@ -109,6 +116,9 @@ export default function OnlinePanel({ onStartMatch }) {
                             <button onClick={() => handleChallenge(challengeUser, 'chess')} style={{ padding: '12px 20px', fontSize: '1.2rem' }}>
                                 ♚ Chess
                             </button>
+                            <button onClick={() => handleChallenge(challengeUser, 'tictactoe')} style={{ padding: '12px 20px', fontSize: '1.2rem' }}>
+                                ❌ Tic-Tac-Toe
+                            </button>
                         </div>
                         <button onClick={() => setChallengeUser(null)} style={{ marginTop: '1rem', background: '#444', fontSize: '0.8rem' }}>Cancel</button>
                     </div>
@@ -130,7 +140,7 @@ export default function OnlinePanel({ onStartMatch }) {
                                 <div>
                                     <strong style={{ fontSize: '0.85rem' }}>{match.player1.displayName || match.player1.username}</strong>
                                     <div style={{ fontSize: '0.7rem', color: '#888' }}>
-                                        {match.gameType === 'chess' ? '♚ Chess' : '🏁 Checkers'}
+                                        {match.gameType === 'chess' ? '♚ Chess' : match.gameType === 'tictactoe' ? '❌ Tic-Tac-Toe' : '🏁 Checkers'}
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: '6px' }}>
@@ -155,7 +165,7 @@ export default function OnlinePanel({ onStartMatch }) {
                             }}>
                                 <div>
                                     <strong style={{ fontSize: '0.85rem' }}>
-                                        {match.gameType === 'chess' ? '♚' : '🏁'} vs {match.player1.username === currentUser?.username ? match.player2.username : match.player1.username}
+                                        {match.gameType === 'chess' ? '♚' : match.gameType === 'tictactoe' ? '❌' : '🏁'} vs {match.player1.username === currentUser?.username ? match.player2.username : match.player1.username}
                                     </strong>
                                     <div style={{ fontSize: '0.7rem', color: match.currentTurn === currentUser?.username ? '#42d392' : '#888' }}>
                                         {match.currentTurn === currentUser?.username ? "Your turn!" : "Waiting..."}

@@ -19,6 +19,8 @@ import Profile from './components/Profile';
 import Leaderboard from './components/Leaderboard';
 import Checkers from './components/Checkers';
 import Chess from './components/Chess';
+import TicTacToe from './components/TicTacToe';
+import Game2048 from './components/Game2048';
 import OnlinePanel from './components/OnlinePanel';
 
 
@@ -146,6 +148,18 @@ function App() {
           highScore={getHighScore('chess')}
           matchId={selectedMatch}
         />;
+      case 'game-tictactoe':
+        return <TicTacToe
+          onFinish={(user) => {
+            handleGameFinish(user);
+            setSelectedMatch(null);
+          }}
+          onRematch={(matchId) => handleStartMatch(matchId, 'tictactoe')}
+          highScore={getHighScore('tictactoe')}
+          matchId={selectedMatch}
+        />;
+      case 'game-2048':
+        return <Game2048 onFinish={handleGameFinish} highScore={getHighScore('2048')} />;
       default:
         return <GameLibrary onSelectGame={(type) => setView(`game-${type}`)} />;
     }

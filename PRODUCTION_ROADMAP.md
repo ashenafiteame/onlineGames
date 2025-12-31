@@ -53,7 +53,51 @@ The current frontend is functional but lacks standard enterprise patterns.
 ## 🕹️ 5. Next-Gen Game Features
 Features to drive user engagement and community.
 
-- **Achievements System**: Award badges for milestones (e.g., "1st Win", "High Score Streak").
-- **Multiplayer Mode**: Basic real-time competition for games like Lane Racer or Guess Number.
-- **Social Features**: Friends list, public user profiles, and activity feeds.
+- **Achievements System**: Award badges for milestones (e.g., "1st Win", "High Score Streak"). ✅ DONE
+- **Multiplayer Mode**: Basic real-time competition for games like Lane Racer or Guess Number. ✅ DONE (Checkers, Chess)
+- **Social Features**: Friends list, public user profiles, and activity feeds. ✅ DONE
 - **Tournament Engine**: Automated daily or weekly competitions with unique rewards.
+
+---
+
+## 🎲 6. Future Games Roadmap
+Planned game additions to expand the library and engagement.
+
+### Multiplayer-Ready Games (Use existing match system)
+
+| Game | Description | Complexity | Status |
+|------|-------------|------------|--------|
+| **Tic-Tac-Toe** | Classic 3x3 grid, quick matches | ⭐ Easy | Planned |
+| **Connect Four** | Drop discs to connect 4 in a row | ⭐ Easy | Planned |
+| **Battleship** | Place ships, guess opponent locations | ⭐⭐ Medium | Planned |
+| **Reversi/Othello** | Flip opponent pieces, strategic | ⭐⭐ Medium | Planned |
+
+### Solo Puzzle Games
+
+| Game | Description | Complexity | Status |
+|------|-------------|------------|--------|
+| **2048** | Slide tiles to combine numbers | ⭐ Easy | Planned |
+| **Sudoku** | Fill 9x9 grid with numbers | ⭐⭐ Medium | Planned |
+| **Minesweeper** | Reveal squares, avoid mines | ⭐ Easy | Planned |
+| **Tetris** | Classic falling blocks | ⭐⭐ Medium | Planned |
+
+### Card Games
+
+| Game | Description | Complexity | Status |
+|------|-------------|------------|--------|
+| **Solitaire** | Classic card patience game | ⭐⭐ Medium | Planned |
+| **Blackjack** | Beat the dealer to 21 | ⭐ Easy | Planned |
+
+### Quick Arcade Games
+
+| Game | Description | Complexity | Status |
+|------|-------------|------------|--------|
+| **Whack-a-Mole** | Click moles as they pop up | ⭐ Easy | Planned |
+| **Flappy Bird Clone** | Tap to fly through pipes | ⭐ Easy | Planned |
+| **Brick Breaker** | Bounce ball to break bricks | ⭐⭐ Medium | Planned |
+
+### Priority Recommendations
+
+1. **Connect Four** - Easy to implement, uses multiplayer system, very popular
+2. **2048** - Highly addictive, solo play, great for mobile
+3. **Tic-Tac-Toe** - Super quick to build, perfect multiplayer starter

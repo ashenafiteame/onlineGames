@@ -30,6 +30,8 @@ public class GameService {
         seedGame("Moto Racer", "High speed bike racing! Smooth steering required.", "moto-racer");
         seedGame("Checkers", "Classic strategy game of checkers vs AI.", "checkers");
         seedGame("Chess", "The ultimate strategy game. Play vs AI or challenge friends!", "chess");
+        seedGame("Tic-Tac-Toe", "Classic X and O game. Get 3 in a row to win!", "tictactoe");
+        seedGame("2048", "Join the numbers and get to the 2048 tile!", "2048");
     }
 
     private void seedGame(String name, String description, String type) {
