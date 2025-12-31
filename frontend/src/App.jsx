@@ -11,16 +11,22 @@ import MotoRacer from './components/MotoRacer';
 import AdminDashboard from './components/AdminDashboard';
 import { AuthService } from './services/AuthService';
 import { GameService } from './services/GameService';
+import { AchievementService } from './services/AchievementService';
+import { SocialService } from './services/SocialService';
+import SocialDashboard from './components/SocialDashboard';
+import ActivityFeed from './components/ActivityFeed';
 
 function App() {
   const [user, setUser] = useState(AuthService.getCurrentUser());
   const [view, setView] = useState('login');
   const [showHelp, setShowHelp] = useState(false);
   const [scores, setScores] = useState([]);
+  const [achievements, setAchievements] = useState([]);
 
   useEffect(() => {
     if (user) {
       GameService.getMyScores().then(setScores).catch(console.error);
+      AchievementService.getMyAchievements().then(setAchievements).catch(console.error);
     }
   }, [user]);
 
@@ -50,6 +56,7 @@ function App() {
       setUser(prev => ({ ...prev, ...updatedUser }));
       localStorage.setItem('user', JSON.stringify({ ...AuthService.getCurrentUser(), ...updatedUser }));
       GameService.getMyScores().then(setScores).catch(console.error);
+      AchievementService.getMyAchievements().then(setAchievements).catch(console.error);
     }
     setView('library');
   };
@@ -65,8 +72,15 @@ function App() {
     switch (view) {
       case 'admin':
         return <AdminDashboard onBack={() => setView('library')} />;
+      case 'social':
+        return <SocialDashboard onBack={() => setView('library')} />;
       case 'library':
-        return <GameLibrary onSelectGame={(type) => setView(`game-${type}`)} />;
+        return (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '2rem', alignItems: 'start' }}>
+            <GameLibrary onSelectGame={(type) => setView(`game-${type}`)} />
+            <ActivityFeed />
+          </div>
+        );
       case 'game-memory':
         return <MemoryMatch onFinish={handleGameFinish} highScore={getHighScore('memory')} />;
       case 'game-guess':
@@ -96,10 +110,18 @@ function App() {
                 {isAdmin && <span style={{ background: '#764ba2', padding: '0.15rem 0.4rem', borderRadius: '4px', marginRight: '0.5rem', fontSize: '0.7rem' }}>ADMIN</span>}
                 Level {user.level || 1} • Score: {user.totalScore || 0}
               </div>
+              <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', marginTop: '4px' }}>
+                {achievements.map((a, i) => (
+                  <span key={i} title={a.name + ": " + a.description} style={{ fontSize: '1.2rem', cursor: 'help' }}>
+                    {a.badge}
+                  </span>
+                ))}
+              </div>
             </div>
             {isAdmin && (
               <button onClick={() => setView('admin')} style={{ background: '#2d3748' }}>🛡️ Admin</button>
             )}
+            <button onClick={() => setView('social')} style={{ background: '#2c5282' }}>👥 Social</button>
             <button onClick={() => setShowHelp(true)} style={{ background: '#444' }}>?</button>
             <button onClick={handleLogout} style={{ background: '#3a1c1c', color: '#ff6b6b' }}>Logout</button>
           </div>

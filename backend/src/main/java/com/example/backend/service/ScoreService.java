@@ -23,6 +23,12 @@ public class ScoreService {
     @Autowired
     private GameService gameService;
 
+    @Autowired
+    private AchievementService achievementService;
+
+    @Autowired
+    private SocialService socialService;
+
     @Transactional
     public User submitScore(User user, String gameType, int scoreValue) {
         Game game = gameService.getGameByType(gameType)
@@ -37,7 +43,15 @@ public class ScoreService {
         // Update User stats
         user.setTotalScore(user.getTotalScore() + scoreValue);
         user.setLevel(1 + user.getTotalScore() / 1000); // Simple level logic
-        return userService.saveUser(user);
+        User savedUser = userService.saveUser(user);
+
+        // Check for achievements
+        achievementService.checkAchievements(savedUser, game, scoreValue);
+
+        // Log activity
+        socialService.logActivity(savedUser, "SCORE", "scored " + scoreValue + " in " + game.getName());
+
+        return savedUser;
     }
 
     public List<Score> getUserScores(User user) {
