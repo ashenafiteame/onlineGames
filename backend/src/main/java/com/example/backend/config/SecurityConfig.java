@@ -22,7 +22,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable()) // Disable CSRF for simplicity in this demo, enable in production
                 .cors(Customizer.withDefaults()) // Enable CORS
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // Allow signup/login
+                        .requestMatchers("/api/auth/signup").permitAll() // Allow signup ONLY
                         .anyRequest().authenticated() // All other requests require authentication
                 )
                 .httpBasic(Customizer.withDefaults()); // Use Basic Auth
@@ -32,13 +32,24 @@ public class SecurityConfig {
 
     @Bean
     public UserDetailsService userDetailsService(UserRepository userRepository) {
-        return username -> userRepository.findByUsername(username)
-                .map(user -> org.springframework.security.core.userdetails.User.builder()
-                        .username(user.getUsername())
-                        .password(user.getPassword())
-                        .roles(user.getRole())
-                        .build())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
+        return username -> {
+            System.out.println("Attempting to load user: " + username);
+            return userRepository.findByUsername(username)
+                    .map(user -> {
+                        System.out.println("Found user: " + user.getUsername());
+                        System.out.println("Stored password hash: " + user.getPassword());
+                        System.out.println("User role: " + user.getRole());
+                        return org.springframework.security.core.userdetails.User.builder()
+                                .username(user.getUsername())
+                                .password(user.getPassword())
+                                .roles(user.getRole())
+                                .build();
+                    })
+                    .orElseThrow(() -> {
+                        System.out.println("User not found: " + username);
+                        return new UsernameNotFoundException("User not found: " + username);
+                    });
+        };
     }
 
     @Bean
