@@ -1,0 +1,46 @@
+package com.example.backend.service;
+
+import com.example.backend.entity.Game;
+import com.example.backend.entity.Score;
+import com.example.backend.entity.User;
+import com.example.backend.repository.GameRepository;
+import com.example.backend.repository.ScoreRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Service
+public class ScoreService {
+
+    @Autowired
+    private ScoreRepository scoreRepository;
+
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private GameService gameService;
+
+    @Transactional
+    public User submitScore(User user, String gameType, int scoreValue) {
+        Game game = gameService.getGameByName(gameType)
+                .orElseThrow(() -> new RuntimeException("Game not found: " + gameType));
+
+        Score score = new Score();
+        score.setUser(user);
+        score.setGame(game);
+        score.setScoreValue(scoreValue);
+        scoreRepository.save(score);
+
+        // Update User stats
+        user.setTotalScore(user.getTotalScore() + scoreValue);
+        user.setLevel(1 + user.getTotalScore() / 1000); // Simple level logic
+        return userService.saveUser(user);
+    }
+
+    public List<Score> getUserScores(User user) {
+        return scoreRepository.findByUser(user);
+    }
+}
