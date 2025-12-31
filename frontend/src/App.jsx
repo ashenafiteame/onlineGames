@@ -17,6 +17,8 @@ import SocialDashboard from './components/SocialDashboard';
 import ActivityFeed from './components/ActivityFeed';
 import Profile from './components/Profile';
 import Leaderboard from './components/Leaderboard';
+import Checkers from './components/Checkers';
+
 
 function App() {
   const [user, setUser] = useState(AuthService.getCurrentUser());
@@ -116,6 +118,8 @@ function App() {
         return <LaneRacer onFinish={handleGameFinish} highScore={getHighScore('lane-racer')} />;
       case 'game-moto-racer':
         return <MotoRacer onFinish={handleGameFinish} highScore={getHighScore('moto-racer')} />;
+      case 'game-checkers':
+        return <Checkers onFinish={handleGameFinish} highScore={getHighScore('checkers')} />;
       default:
         return <GameLibrary onSelectGame={(type) => setView(`game-${type}`)} />;
     }

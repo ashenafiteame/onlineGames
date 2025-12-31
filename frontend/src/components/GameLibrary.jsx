@@ -11,7 +11,8 @@ export default function GameLibrary({ onSelectGame }) {
         'snake': '/games/snake.png',
         'balloon': '/games/balloon.png',
         'lane-racer': '/games/lane-racer.png',
-        'moto-racer': '/games/moto-racer.png'
+        'moto-racer': '/games/moto-racer.png',
+        'checkers': '/games/checkers.png'
     };
 
     useEffect(() => {
@@ -31,7 +32,7 @@ export default function GameLibrary({ onSelectGame }) {
             <div className="product-grid">
                 {games.map(game => (
                     <div key={game.id} className="card" onClick={() => onSelectGame(game.type)} style={{ cursor: 'pointer', overflow: 'hidden', padding: 0 }}>
-                        <div style={{ height: '150px', backgroundImage: `url(${gameImages[game.type]})`, backgroundSize: 'cover', backgroundPosition: 'center' }}></div>
+                        <div className="game-card-img" style={{ backgroundImage: `url(${gameImages[game.type]})` }}></div>
                         <div style={{ padding: '1.5rem' }}>
                             <h3 style={{ marginTop: 0 }}>{game.name}</h3>
                             <p>{game.description}</p>
