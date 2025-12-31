@@ -16,6 +16,7 @@ export default function Checkers({ onFinish, highScore, matchId }) {
     const [selected, setSelected] = useState(null);
     const [turn, setTurn] = useState(RED_PLAYER); // By default Red starts
     const [validMoves, setValidMoves] = useState([]);
+    const [lastMove, setLastMove] = useState(null);
     const [isMultiplayer, setIsMultiplayer] = useState(!!matchId);
     const pollInterval = useRef(null);
 
@@ -181,6 +182,7 @@ export default function Checkers({ onFinish, highScore, matchId }) {
                 const updatedMatch = await MatchService.submitMove(matchId, JSON.stringify(newBoard), nextTurnUsername);
                 setMatch(updatedMatch);
                 setBoard(newBoard);
+                setLastMove({ from: { r: fromR, c: fromC }, to: { r: toR, c: toC } });
                 if (multiJump) {
                     setSelected({ r: toR, c: toC });
                     setValidMoves(possibleNextMoves);
@@ -195,6 +197,7 @@ export default function Checkers({ onFinish, highScore, matchId }) {
         } else {
             // Local AI Logic
             setBoard(newBoard);
+            setLastMove({ from: { r: fromR, c: fromC }, to: { r: toR, c: toC } });
             setSelected(null);
             setValidMoves([]);
 
@@ -343,9 +346,18 @@ export default function Checkers({ onFinish, highScore, matchId }) {
                 {board.map((row, r) => (
                     <div key={r} style={{ display: 'flex' }}>
                         {row.map((cell, c) => {
-                            const isBlack = (r + c) % 2 !== 0;
+                            const isBlackSquare = (r + c) % 2 !== 0;
                             const isValid = validMoves.some(m => m.r === r && m.c === c);
                             const isSel = selected && selected.r === r && selected.c === c;
+                            const isLastMove = lastMove && ((lastMove.from.r === r && lastMove.from.c === c) || (lastMove.to.r === r && lastMove.to.c === c));
+
+                            // Determine background color
+                            let bgColor;
+                            if (isBlackSquare) {
+                                bgColor = isLastMove ? '#8B7355' : '#222';
+                            } else {
+                                bgColor = '#eee';
+                            }
 
                             return (
                                 <div
@@ -354,11 +366,11 @@ export default function Checkers({ onFinish, highScore, matchId }) {
                                     style={{
                                         width: '50px',
                                         height: '50px',
-                                        background: isBlack ? '#222' : '#eee',
+                                        background: bgColor,
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        cursor: isBlack ? 'pointer' : 'default',
+                                        cursor: isBlackSquare ? 'pointer' : 'default',
                                         position: 'relative',
                                         border: isSel ? '2px solid var(--primary)' : 'none',
                                         transform: shouldRotate() ? 'rotate(180deg)' : 'none'

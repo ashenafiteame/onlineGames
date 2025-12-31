@@ -24,6 +24,7 @@ export default function Chess({ onFinish, highScore, matchId }) {
     const [selected, setSelected] = useState(null);
     const [turn, setTurn] = useState('white');
     const [validMoves, setValidMoves] = useState([]);
+    const [lastMove, setLastMove] = useState(null);
     const [isMultiplayer] = useState(!!matchId);
     const [gameOver, setGameOver] = useState(false);
     const pollInterval = useRef(null);
@@ -239,6 +240,7 @@ export default function Chess({ onFinish, highScore, matchId }) {
         setBoard(newBoard);
         setSelected(null);
         setValidMoves([]);
+        setLastMove({ from: { r: fromR, c: fromC }, to: { r: toR, c: toC } });
         setTurn('black');
 
         // Check for game over
@@ -293,6 +295,7 @@ export default function Chess({ onFinish, highScore, matchId }) {
         const newBoard = applyMove(currentBoard, move.fromR, move.fromC, move.r, move.c);
 
         setBoard(newBoard);
+        setLastMove({ from: { r: move.fromR, c: move.fromC }, to: { r: move.r, c: move.c } });
         setTurn('white');
 
         // Check for game over
@@ -321,6 +324,7 @@ export default function Chess({ onFinish, highScore, matchId }) {
                     setBoard(newBoard);
                     setSelected(null);
                     setValidMoves([]);
+                    setLastMove({ from: { r: selected.r, c: selected.c }, to: { r, c } });
 
                     const nextTurn = turn === 'white' ? 'black' : 'white';
                     setTurn(nextTurn);
@@ -398,8 +402,8 @@ export default function Chess({ onFinish, highScore, matchId }) {
             )}
 
             <div style={{
-                display: 'inline-block', padding: '8px', background: '#654321', borderRadius: '8px',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                display: 'inline-block', padding: '12px', background: '#3d2817', borderRadius: '12px',
+                boxShadow: '0 15px 40px rgba(0,0,0,0.6)',
                 transform: shouldRotate() ? 'rotate(180deg)' : 'none'
             }}>
                 {board.map((row, r) => (
@@ -408,29 +412,50 @@ export default function Chess({ onFinish, highScore, matchId }) {
                             const isLight = (r + c) % 2 === 0;
                             const isValid = validMoves.some(m => m.r === r && m.c === c);
                             const isSel = selected?.r === r && selected?.c === c;
+                            const isLastMove = lastMove && ((lastMove.from.r === r && lastMove.from.c === c) || (lastMove.to.r === r && lastMove.to.c === c));
+
+                            // Determine background color
+                            let bgColor;
+                            if (isSel) {
+                                bgColor = '#7B68EE';
+                            } else if (isLastMove) {
+                                bgColor = isLight ? '#F6F669' : '#BACA2B';
+                            } else {
+                                bgColor = isLight ? '#EEEED2' : '#769656';
+                            }
 
                             return (
                                 <div
                                     key={c}
                                     onClick={() => handleSquareClick(r, c)}
                                     style={{
-                                        width: '50px', height: '50px',
-                                        background: isSel ? '#7B68EE' : isLight ? '#F0D9B5' : '#B58863',
+                                        width: '65px', height: '65px',
+                                        background: bgColor,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         cursor: 'pointer', position: 'relative',
-                                        fontSize: '2.2rem',
-                                        transform: shouldRotate() ? 'rotate(180deg)' : 'none'
+                                        fontSize: '3rem',
+                                        transform: shouldRotate() ? 'rotate(180deg)' : 'none',
+                                        transition: 'background 0.15s'
                                     }}
                                 >
                                     {isValid && (
                                         <div style={{
-                                            position: 'absolute', width: '16px', height: '16px',
-                                            borderRadius: '50%', background: 'rgba(0,200,0,0.5)'
+                                            position: 'absolute', width: '22px', height: '22px',
+                                            borderRadius: '50%', background: 'rgba(0,180,0,0.6)',
+                                            border: '2px solid rgba(0,200,0,0.8)'
                                         }} />
                                     )}
-                                    <span style={{ color: isWhitePiece(cell) ? '#fff' : '#000', textShadow: isWhitePiece(cell) ? '1px 1px 2px #000' : '1px 1px 2px #fff' }}>
-                                        {PIECE_SYMBOLS[cell] || ''}
-                                    </span>
+                                    {cell !== EMPTY && (
+                                        <span style={{
+                                            color: isWhitePiece(cell) ? '#FFFFFF' : '#1a1a1a',
+                                            textShadow: isWhitePiece(cell)
+                                                ? '2px 2px 4px #000, -1px -1px 2px #000, 1px -1px 2px #000, -1px 1px 2px #000'
+                                                : '2px 2px 4px rgba(255,255,255,0.5), 0 0 8px rgba(255,255,255,0.3)',
+                                            filter: 'drop-shadow(1px 1px 1px rgba(0,0,0,0.3))'
+                                        }}>
+                                            {PIECE_SYMBOLS[cell]}
+                                        </span>
+                                    )}
                                 </div>
                             );
                         })}
