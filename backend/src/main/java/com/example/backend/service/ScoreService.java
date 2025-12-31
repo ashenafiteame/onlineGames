@@ -3,7 +3,6 @@ package com.example.backend.service;
 import com.example.backend.entity.Game;
 import com.example.backend.entity.Score;
 import com.example.backend.entity.User;
-import com.example.backend.repository.GameRepository;
 import com.example.backend.repository.ScoreRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

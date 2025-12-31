@@ -1,0 +1,26 @@
+# IDEs and Editors
+.vscode/
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Build Artifacts
+**/target/
+**/node_modules/
+**/dist/
+**/build/
+**/out/
+
+# Logs and temporary files
+*.log
+tmp/
+.temp/
+
+# Environment variables
+.env
+.env.local

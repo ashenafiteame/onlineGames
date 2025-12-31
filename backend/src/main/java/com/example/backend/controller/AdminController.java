@@ -1,7 +1,6 @@
 package com.example.backend.controller;
 
 import com.example.backend.entity.Game;
-import com.example.backend.entity.Game;
 import com.example.backend.entity.User;
 import com.example.backend.service.GameService;
 import com.example.backend.service.ScoreService;
