@@ -9,6 +9,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "users")
 @Data
@@ -30,4 +32,5 @@ public class User {
     private String github;
     private String displayName;
     private String avatarEmoji;
+    private LocalDateTime lastActiveAt;
 }

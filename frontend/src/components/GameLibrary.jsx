@@ -12,7 +12,8 @@ export default function GameLibrary({ onSelectGame }) {
         'balloon': '/games/balloon.png',
         'lane-racer': '/games/lane-racer.png',
         'moto-racer': '/games/moto-racer.png',
-        'checkers': '/games/checkers.png'
+        'checkers': '/games/checkers.png',
+        'chess': '/games/chess.png'
     };
 
     useEffect(() => {

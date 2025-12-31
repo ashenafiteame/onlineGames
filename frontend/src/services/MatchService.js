@@ -69,5 +69,23 @@ export const MatchService = {
         });
         if (!response.ok) throw new Error('Failed to finish match');
         return response.json();
+    },
+
+    declineMatch: async (matchId) => {
+        const response = await fetch(`${API_URL}/${matchId}/decline`, {
+            method: 'POST',
+            headers: { 'Authorization': AuthService.getAuthHeader() }
+        });
+        if (!response.ok) throw new Error('Failed to decline match');
+        return response.json();
+    },
+
+    forfeitMatch: async (matchId) => {
+        const response = await fetch(`${API_URL}/${matchId}/forfeit`, {
+            method: 'POST',
+            headers: { 'Authorization': AuthService.getAuthHeader() }
+        });
+        if (!response.ok) throw new Error('Failed to forfeit match');
+        return response.json();
     }
 };

@@ -26,9 +26,6 @@ class MatchServiceTest {
     @Mock
     private UserRepository userRepository;
 
-    @Mock
-    private SocialService socialService;
-
     @InjectMocks
     private MatchService matchService;
 
@@ -58,7 +55,6 @@ class MatchServiceTest {
     @Test
     void createMatchInvite_Success() {
         when(userRepository.findByUsername("player2")).thenReturn(Optional.of(player2));
-        when(socialService.areFriends(player1, player2)).thenReturn(true);
         when(matchRepository.save(any(GameMatch.class))).thenReturn(match);
 
         GameMatch result = matchService.createMatchInvite(player1, "player2", "checkers", "{}");
@@ -70,15 +66,12 @@ class MatchServiceTest {
     }
 
     @Test
-    void createMatchInvite_NotFriends_ThrowsException() {
-        when(userRepository.findByUsername("player2")).thenReturn(Optional.of(player2));
-        when(socialService.areFriends(player1, player2)).thenReturn(false);
-
+    void createMatchInvite_SelfChallenge_ThrowsException() {
         Exception exception = assertThrows(RuntimeException.class, () -> {
-            matchService.createMatchInvite(player1, "player2", "checkers", "{}");
+            matchService.createMatchInvite(player1, "player1", "checkers", "{}");
         });
 
-        assertEquals("You can only challenge friends", exception.getMessage());
+        assertEquals("You cannot challenge yourself", exception.getMessage());
     }
 
     @Test

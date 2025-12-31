@@ -21,17 +21,20 @@ public class MatchService {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private SocialService socialService;
-
     @Transactional
     public GameMatch createMatchInvite(User inviter, String opponentUsername, String gameType, String initialBoard) {
+        // Check they're not challenging themselves
+        if (inviter.getUsername().equals(opponentUsername)) {
+            throw new RuntimeException("You cannot challenge yourself");
+        }
+
         User opponent = userRepository.findByUsername(opponentUsername)
                 .orElseThrow(() -> new RuntimeException("Opponent not found"));
 
-        // Check if they are friends
-        if (!socialService.areFriends(inviter, opponent)) {
-            throw new RuntimeException("You can only challenge friends");
+        // Check for existing pending/active match between these players
+        List<GameMatch> existingMatches = matchRepository.findExistingMatchBetweenPlayers(inviter, opponent);
+        if (!existingMatches.isEmpty()) {
+            throw new RuntimeException("You already have an active or pending match with this player");
         }
 
         GameMatch match = new GameMatch();
@@ -56,7 +59,54 @@ public class MatchService {
             throw new RuntimeException("You cannot accept this match");
         }
 
+        if (!match.getStatus().equals("PENDING")) {
+            throw new RuntimeException("This match is no longer pending");
+        }
+
         match.setStatus("ACTIVE");
+        match.setLastMoveAt(LocalDateTime.now());
+        return matchRepository.save(match);
+    }
+
+    @Transactional
+    public GameMatch declineMatch(Long matchId, User user) {
+        GameMatch match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Match not found"));
+
+        if (!match.getPlayer2().equals(user)) {
+            throw new RuntimeException("You cannot decline this match");
+        }
+
+        if (!match.getStatus().equals("PENDING")) {
+            throw new RuntimeException("This match is no longer pending");
+        }
+
+        match.setStatus("DECLINED");
+        match.setLastMoveAt(LocalDateTime.now());
+        return matchRepository.save(match);
+    }
+
+    @Transactional
+    public GameMatch forfeitMatch(Long matchId, User user) {
+        GameMatch match = matchRepository.findById(matchId)
+                .orElseThrow(() -> new RuntimeException("Match not found"));
+
+        if (!match.getStatus().equals("ACTIVE")) {
+            throw new RuntimeException("This match is not active");
+        }
+
+        // Verify user is a participant
+        if (!match.getPlayer1().equals(user) && !match.getPlayer2().equals(user)) {
+            throw new RuntimeException("You are not part of this match");
+        }
+
+        // Set winner as the OTHER player (the one who didn't forfeit)
+        String winner = match.getPlayer1().equals(user)
+                ? match.getPlayer2().getUsername()
+                : match.getPlayer1().getUsername();
+
+        match.setStatus("FORFEITED");
+        match.setCurrentTurn(winner); // Store winner in currentTurn field
         match.setLastMoveAt(LocalDateTime.now());
         return matchRepository.save(match);
     }

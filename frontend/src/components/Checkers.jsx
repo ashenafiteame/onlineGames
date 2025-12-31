@@ -50,10 +50,37 @@ export default function Checkers({ onFinish, highScore, matchId }) {
         return match.currentTurn === currentUser.username;
     };
 
+    // Rotate board for white player so their pieces are at the bottom
+    const shouldRotate = () => {
+        if (!isMultiplayer || !match) return false;
+        return getMyColor() === WHITE_PLAYER;
+    };
+
     const fetchMatch = async () => {
         if (!matchId) return;
         try {
             const data = await MatchService.getMatch(matchId);
+
+            // Check if opponent forfeited
+            if (data.status === 'FORFEITED' && data.currentTurn === currentUser.username) {
+                // We won by forfeit! Award winner score
+                GameService.submitScore('checkers', 500).then(user => {
+                    alert('Your opponent resigned! You win! 🎉 (+500 XP)');
+                    onFinish(user);
+                }).catch(() => {
+                    alert('Your opponent resigned! You win! 🎉');
+                    onFinish(null);
+                });
+                return;
+            }
+
+            // Check if game was finished normally while we were away
+            if (data.status === 'FINISHED') {
+                alert('This match has ended.');
+                onFinish(null);
+                return;
+            }
+
             setMatch(data);
             setBoard(JSON.parse(data.boardData));
             setTurn(data.currentTurn === data.player1.username ? RED_PLAYER : WHITE_PLAYER);
@@ -67,19 +94,15 @@ export default function Checkers({ onFinish, highScore, matchId }) {
             // Initial fetch
             if (!match) fetchMatch();
 
+            // Always poll to detect opponent moves AND forfeit/finish status
             pollInterval.current = setInterval(() => {
-                // We use a ref or simply rely on the fact that this effect 
-                // re-runs when dependencies change, so 'match' is fresh.
-                // But better to be explicit: check if it's NOT our turn before overwriting state.
-                if (!isMyTurn()) {
-                    fetchMatch();
-                }
+                fetchMatch();
             }, 3000);
         }
         return () => {
             if (pollInterval.current) clearInterval(pollInterval.current);
         };
-    }, [matchId, match, turn]); // Added dependencies to ensure fresh closure
+    }, [matchId]); // Only depend on matchId to avoid re-creating interval
 
     const getMoves = (r, c, b, currentTurn) => {
         const moves = [];
@@ -222,12 +245,21 @@ export default function Checkers({ onFinish, highScore, matchId }) {
 
         if (redCount === 0 || whiteCount === 0) {
             const won = (getMyColor() === RED_PLAYER && redCount > 0) || (getMyColor() === WHITE_PLAYER && whiteCount > 0);
-            const score = won ? 500 : 100;
+            const score = won ? 500 : 100; // Winner gets 500, loser gets 100 participation
 
             if (isMultiplayer) {
-                MatchService.finishMatch(matchId).then(() => {
-                    alert(won ? "You Won the Match! 🎉" : "Opponent Won! Good game.");
-                    onFinish(null); // Simple finish for multiplayer
+                // Submit score for multiplayer game
+                GameService.submitScore('checkers', score).then(user => {
+                    MatchService.finishMatch(matchId).then(() => {
+                        alert(won ? "You Won the Match! 🎉 (+500 XP)" : "Opponent Won! Good game. (+100 XP)");
+                        onFinish(user);
+                    });
+                }).catch(err => {
+                    console.error('Failed to submit score:', err);
+                    MatchService.finishMatch(matchId).then(() => {
+                        alert(won ? "You Won the Match! 🎉" : "Opponent Won! Good game.");
+                        onFinish(null);
+                    });
                 });
             } else {
                 GameService.submitScore('checkers', redCount > 0 ? 500 : 50).then(user => {
@@ -236,6 +268,28 @@ export default function Checkers({ onFinish, highScore, matchId }) {
                 });
             }
         }
+    };
+
+    const handleForfeit = () => {
+        if (!window.confirm('Are you sure you want to resign? Your opponent will win the match.')) return;
+
+        // Submit a small participation score for resigning (50 XP)
+        GameService.submitScore('checkers', 50).then(user => {
+            MatchService.forfeitMatch(matchId)
+                .then(() => {
+                    alert('You resigned. Your opponent wins! (+50 XP)');
+                    onFinish(user);
+                })
+                .catch(err => alert('Failed to forfeit: ' + err.message));
+        }).catch(err => {
+            console.error('Failed to submit score:', err);
+            MatchService.forfeitMatch(matchId)
+                .then(() => {
+                    alert('You resigned. Your opponent wins!');
+                    onFinish(null);
+                })
+                .catch(e => alert('Failed to forfeit: ' + e.message));
+        });
     };
 
     return (
@@ -261,12 +315,30 @@ export default function Checkers({ onFinish, highScore, matchId }) {
                 </div>
             )}
 
+            {isMultiplayer && match && match.status === 'ACTIVE' && (
+                <div style={{ marginBottom: '1rem' }}>
+                    <button
+                        onClick={handleForfeit}
+                        style={{
+                            background: 'rgba(255,107,107,0.1)',
+                            color: '#ff6b6b',
+                            border: '1px solid rgba(255,107,107,0.3)',
+                            fontSize: '0.8rem',
+                            padding: '6px 12px'
+                        }}
+                    >
+                        🏳️ Resign
+                    </button>
+                </div>
+            )}
+
             <div style={{
                 display: 'inline-block',
                 padding: '12px',
                 background: '#444',
                 borderRadius: '8px',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                transform: shouldRotate() ? 'rotate(180deg)' : 'none'
             }}>
                 {board.map((row, r) => (
                     <div key={r} style={{ display: 'flex' }}>
@@ -288,7 +360,8 @@ export default function Checkers({ onFinish, highScore, matchId }) {
                                         justifyContent: 'center',
                                         cursor: isBlack ? 'pointer' : 'default',
                                         position: 'relative',
-                                        border: isSel ? '2px solid var(--primary)' : 'none'
+                                        border: isSel ? '2px solid var(--primary)' : 'none',
+                                        transform: shouldRotate() ? 'rotate(180deg)' : 'none'
                                     }}
                                 >
                                     {isValid && (

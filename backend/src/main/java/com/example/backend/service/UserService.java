@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -96,5 +97,17 @@ public class UserService {
 
     public List<User> getTopUsersByScore() {
         return userRepository.findTop10ByOrderByTotalScoreDesc();
+    }
+
+    // Update user's last active timestamp
+    public void updateLastActive(User user) {
+        user.setLastActiveAt(LocalDateTime.now());
+        userRepository.save(user);
+    }
+
+    // Get users who were active in the last 5 minutes
+    public List<User> getOnlineUsers() {
+        LocalDateTime cutoff = LocalDateTime.now().minusMinutes(5);
+        return userRepository.findByLastActiveAtAfter(cutoff);
     }
 }

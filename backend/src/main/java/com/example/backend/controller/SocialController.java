@@ -77,4 +77,24 @@ public class SocialController {
     public List<Activity> getGlobalFeed() {
         return socialService.getGlobalFeed();
     }
+
+    @GetMapping("/online")
+    public List<User> getOnlineUsers(Principal principal) {
+        User currentUser = userService.findByUsername(principal.getName())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        // Update current user's activity
+        userService.updateLastActive(currentUser);
+        // Return online users excluding self
+        return userService.getOnlineUsers().stream()
+                .filter(u -> !u.getUsername().equals(currentUser.getUsername()))
+                .toList();
+    }
+
+    @PostMapping("/heartbeat")
+    public ResponseEntity<?> heartbeat(Principal principal) {
+        User user = userService.findByUsername(principal.getName())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        userService.updateLastActive(user);
+        return ResponseEntity.ok("OK");
+    }
 }

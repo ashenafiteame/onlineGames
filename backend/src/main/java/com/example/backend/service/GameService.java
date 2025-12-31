@@ -29,6 +29,7 @@ public class GameService {
         seedGame("Lane Racer", "Dodge traffic on the infinite highway.", "lane-racer");
         seedGame("Moto Racer", "High speed bike racing! Smooth steering required.", "moto-racer");
         seedGame("Checkers", "Classic strategy game of checkers vs AI.", "checkers");
+        seedGame("Chess", "The ultimate strategy game. Play vs AI or challenge friends!", "chess");
     }
 
     private void seedGame(String name, String description, String type) {

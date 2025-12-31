@@ -76,4 +76,24 @@ public class MatchController {
         String status = body.getOrDefault("status", "FINISHED");
         return ResponseEntity.ok(matchService.finishMatch(matchId, status));
     }
+
+    @PostMapping("/{matchId}/decline")
+    public ResponseEntity<?> decline(@PathVariable Long matchId, Authentication auth) {
+        User user = userService.findByUsername(auth.getName()).get();
+        try {
+            return ResponseEntity.ok(matchService.declineMatch(matchId, user));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @PostMapping("/{matchId}/forfeit")
+    public ResponseEntity<?> forfeit(@PathVariable Long matchId, Authentication auth) {
+        User user = userService.findByUsername(auth.getName()).get();
+        try {
+            return ResponseEntity.ok(matchService.forfeitMatch(matchId, user));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

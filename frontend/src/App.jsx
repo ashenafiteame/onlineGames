@@ -18,6 +18,8 @@ import ActivityFeed from './components/ActivityFeed';
 import Profile from './components/Profile';
 import Leaderboard from './components/Leaderboard';
 import Checkers from './components/Checkers';
+import Chess from './components/Chess';
+import OnlinePanel from './components/OnlinePanel';
 
 
 function App() {
@@ -92,10 +94,6 @@ function App() {
             setSelectedProfile(username);
             setView('profile');
           }}
-          onStartMatch={(matchId) => {
-            setSelectedMatch(matchId);
-            setView('game-checkers');
-          }}
         />;
       case 'profile':
         return <Profile
@@ -109,7 +107,13 @@ function App() {
         return (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '2rem', alignItems: 'start' }}>
             <GameLibrary onSelectGame={(type) => setView(`game-${type}`)} />
-            <ActivityFeed />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <OnlinePanel onStartMatch={(matchId, gameType) => {
+                setSelectedMatch(matchId);
+                setView(`game-${gameType || 'checkers'}`);
+              }} />
+              <ActivityFeed />
+            </div>
           </div>
         );
       case 'game-memory':
@@ -131,6 +135,15 @@ function App() {
             setSelectedMatch(null);
           }}
           highScore={getHighScore('checkers')}
+          matchId={selectedMatch}
+        />;
+      case 'game-chess':
+        return <Chess
+          onFinish={(user) => {
+            handleGameFinish(user);
+            setSelectedMatch(null);
+          }}
+          highScore={getHighScore('chess')}
           matchId={selectedMatch}
         />;
       default:

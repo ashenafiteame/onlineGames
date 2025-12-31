@@ -63,5 +63,22 @@ export const SocialService = {
         });
         if (!response.ok) throw new Error('Failed to unfriend');
         return response.text();
+    },
+
+    getOnlineUsers: async () => {
+        const authHeader = AuthService.getAuthHeader();
+        const response = await fetch(`${API_URL}/api/social/online`, {
+            headers: authHeader ? { 'Authorization': authHeader } : {}
+        });
+        if (!response.ok) throw new Error('Failed to fetch online users');
+        return response.json();
+    },
+
+    heartbeat: async () => {
+        const authHeader = AuthService.getAuthHeader();
+        await fetch(`${API_URL}/api/social/heartbeat`, {
+            method: 'POST',
+            headers: authHeader ? { 'Authorization': authHeader } : {}
+        });
     }
 };
