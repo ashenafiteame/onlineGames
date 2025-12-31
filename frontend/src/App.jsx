@@ -8,12 +8,13 @@ import SnakeGame from './components/SnakeGame';
 import BalloonPopper from './components/BalloonPopper';
 import LaneRacer from './components/LaneRacer';
 import MotoRacer from './components/MotoRacer';
+import AdminDashboard from './components/AdminDashboard';
 import { AuthService } from './services/AuthService';
 import { GameService } from './services/GameService';
 
 function App() {
   const [user, setUser] = useState(AuthService.getCurrentUser());
-  const [view, setView] = useState('login'); // login, signup, library, game-memory, game-guess
+  const [view, setView] = useState('login');
   const [showHelp, setShowHelp] = useState(false);
   const [scores, setScores] = useState([]);
 
@@ -46,12 +47,14 @@ function App() {
 
   const handleGameFinish = (updatedUser) => {
     if (updatedUser) {
-      setUser(prev => ({ ...prev, ...updatedUser })); // Update local stats
+      setUser(prev => ({ ...prev, ...updatedUser }));
       localStorage.setItem('user', JSON.stringify({ ...AuthService.getCurrentUser(), ...updatedUser }));
-      GameService.getMyScores().then(setScores).catch(console.error); // Refresh scores
+      GameService.getMyScores().then(setScores).catch(console.error);
     }
     setView('library');
   };
+
+  const isAdmin = user?.role === 'ADMIN';
 
   const renderContent = () => {
     if (!user) {
@@ -60,6 +63,8 @@ function App() {
     }
 
     switch (view) {
+      case 'admin':
+        return <AdminDashboard onBack={() => setView('library')} />;
       case 'library':
         return <GameLibrary onSelectGame={(type) => setView(`game-${type}`)} />;
       case 'game-memory':
@@ -87,8 +92,14 @@ function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div style={{ textAlign: 'right' }}>
               <div style={{ fontWeight: 'bold' }}>{user.username}</div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>Level {user.level || 1} • Score: {user.totalScore || 0}</div>
+              <div style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>
+                {isAdmin && <span style={{ background: '#764ba2', padding: '0.15rem 0.4rem', borderRadius: '4px', marginRight: '0.5rem', fontSize: '0.7rem' }}>ADMIN</span>}
+                Level {user.level || 1} • Score: {user.totalScore || 0}
+              </div>
             </div>
+            {isAdmin && (
+              <button onClick={() => setView('admin')} style={{ background: '#2d3748' }}>🛡️ Admin</button>
+            )}
             <button onClick={() => setShowHelp(true)} style={{ background: '#444' }}>?</button>
             <button onClick={handleLogout} style={{ background: '#3a1c1c', color: '#ff6b6b' }}>Logout</button>
           </div>

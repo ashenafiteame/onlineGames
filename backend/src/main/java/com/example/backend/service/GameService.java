@@ -44,9 +44,21 @@ public class GameService {
         return gameRepository.findByName(name);
     }
 
+    public Optional<Game> getGameByType(String type) {
+        return gameRepository.findByType(type);
+    }
+
+    public Optional<Game> getGameById(Long id) {
+        return gameRepository.findById(id);
+    }
+
     @Transactional
     public void deleteGame(Game game) {
         scoreRepository.deleteByGame(game);
         gameRepository.delete(game);
+    }
+
+    public long countGames() {
+        return gameRepository.count();
     }
 }

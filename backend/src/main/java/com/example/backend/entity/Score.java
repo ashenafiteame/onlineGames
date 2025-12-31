@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Entity
 @Table(name = "scores")
@@ -18,9 +18,9 @@ public class Score {
 
     private int scoreValue;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
-    @JsonIgnore
+    @JsonIgnoreProperties({ "password", "role", "level", "totalScore" })
     private User user;
 
     @ManyToOne(fetch = FetchType.EAGER)

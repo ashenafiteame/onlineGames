@@ -25,7 +25,7 @@ public class ScoreService {
 
     @Transactional
     public User submitScore(User user, String gameType, int scoreValue) {
-        Game game = gameService.getGameByName(gameType)
+        Game game = gameService.getGameByType(gameType)
                 .orElseThrow(() -> new RuntimeException("Game not found: " + gameType));
 
         Score score = new Score();
@@ -42,5 +42,13 @@ public class ScoreService {
 
     public List<Score> getUserScores(User user) {
         return scoreRepository.findByUser(user);
+    }
+
+    public List<Score> getLeaderboard() {
+        return scoreRepository.findTop10ByOrderByScoreValueDesc();
+    }
+
+    public long countScores() {
+        return scoreRepository.count();
     }
 }
