@@ -109,4 +109,8 @@ public class SocialService {
     public List<Activity> getGlobalFeed() {
         return activityRepository.findTop50ByOrderByCreatedAtDesc();
     }
+
+    public boolean areFriends(User user1, User user2) {
+        return friendshipRepository.findByUsers(user1, user2).isPresent();
+    }
 }

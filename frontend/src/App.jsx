@@ -28,6 +28,8 @@ function App() {
   const [scores, setScores] = useState([]);
   const [achievements, setAchievements] = useState([]);
   const [showMenu, setShowMenu] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState(null);
+
 
 
   const refreshUser = () => {
@@ -90,6 +92,10 @@ function App() {
             setSelectedProfile(username);
             setView('profile');
           }}
+          onStartMatch={(matchId) => {
+            setSelectedMatch(matchId);
+            setView('game-checkers');
+          }}
         />;
       case 'profile':
         return <Profile
@@ -119,7 +125,14 @@ function App() {
       case 'game-moto-racer':
         return <MotoRacer onFinish={handleGameFinish} highScore={getHighScore('moto-racer')} />;
       case 'game-checkers':
-        return <Checkers onFinish={handleGameFinish} highScore={getHighScore('checkers')} />;
+        return <Checkers
+          onFinish={(user) => {
+            handleGameFinish(user);
+            setSelectedMatch(null);
+          }}
+          highScore={getHighScore('checkers')}
+          matchId={selectedMatch}
+        />;
       default:
         return <GameLibrary onSelectGame={(type) => setView(`game-${type}`)} />;
     }

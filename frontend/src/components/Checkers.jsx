@@ -1,36 +1,85 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GameService } from '../services/GameService';
+import { AuthService } from '../services/AuthService';
+import { MatchService } from '../services/MatchService';
 
 const BOARD_SIZE = 8;
-const PLAYER = 1; // Red
-const AI = 2; // White
-const PLAYER_KING = 3;
-const AI_KING = 4;
+const RED_PLAYER = 1; // Player 1 (Inviter)
+const WHITE_PLAYER = 2; // Player 2 (Invited)
+const RED_KING = 3;
+const WHITE_KING = 4;
 
-export default function Checkers({ onFinish, highScore }) {
+export default function Checkers({ onFinish, highScore, matchId }) {
+    const currentUser = AuthService.getCurrentUser();
+    const [match, setMatch] = useState(null);
     const [board, setBoard] = useState(initialBoard());
     const [selected, setSelected] = useState(null);
-    const [turn, setTurn] = useState(PLAYER);
+    const [turn, setTurn] = useState(RED_PLAYER); // By default Red starts
     const [validMoves, setValidMoves] = useState([]);
+    const [isMultiplayer, setIsMultiplayer] = useState(!!matchId);
+    const pollInterval = useRef(null);
 
     function initialBoard() {
         const b = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(0));
         for (let r = 0; r < 3; r++) {
             for (let c = 0; c < BOARD_SIZE; c++) {
-                if ((r + c) % 2 !== 0) b[r][c] = AI;
+                if ((r + c) % 2 !== 0) b[r][c] = WHITE_PLAYER;
             }
         }
         for (let r = 5; r < BOARD_SIZE; r++) {
             for (let c = 0; c < BOARD_SIZE; c++) {
-                if ((r + c) % 2 !== 0) b[r][c] = PLAYER;
+                if ((r + c) % 2 !== 0) b[r][c] = RED_PLAYER;
             }
         }
         return b;
     }
 
-    const isKing = (piece) => piece === PLAYER_KING || piece === AI_KING;
-    const isPlayer = (piece) => piece === PLAYER || piece === PLAYER_KING;
-    const isAI = (piece) => piece === AI || piece === AI_KING;
+    const isKing = (piece) => piece === RED_KING || piece === WHITE_KING;
+    const isRed = (piece) => piece === RED_PLAYER || piece === RED_KING;
+    const isWhite = (piece) => piece === WHITE_PLAYER || piece === WHITE_KING;
+
+    // Multiplayer Helpers
+    const getMyColor = () => {
+        if (!match) return RED_PLAYER;
+        return match.player1.username === currentUser.username ? RED_PLAYER : WHITE_PLAYER;
+    };
+
+    const isMyTurn = () => {
+        if (!isMultiplayer) return turn === RED_PLAYER; // In single player, user is always Red
+        if (!match) return false;
+        return match.currentTurn === currentUser.username;
+    };
+
+    const fetchMatch = async () => {
+        if (!matchId) return;
+        try {
+            const data = await MatchService.getMatch(matchId);
+            setMatch(data);
+            setBoard(JSON.parse(data.boardData));
+            setTurn(data.currentTurn === data.player1.username ? RED_PLAYER : WHITE_PLAYER);
+        } catch (error) {
+            console.error('Error polling match:', error);
+        }
+    };
+
+    useEffect(() => {
+        if (isMultiplayer) {
+            // Initial fetch
+            if (!match) fetchMatch();
+
+            pollInterval.current = setInterval(() => {
+                // We use a ref or simply rely on the fact that this effect 
+                // re-runs when dependencies change, so 'match' is fresh.
+                // But better to be explicit: check if it's NOT our turn before overwriting state.
+                if (!isMyTurn()) {
+                    fetchMatch();
+                }
+            }, 3000);
+        }
+        return () => {
+            if (pollInterval.current) clearInterval(pollInterval.current);
+        };
+    }, [matchId, match, turn]); // Added dependencies to ensure fresh closure
 
     const getMoves = (r, c, b, currentTurn) => {
         const moves = [];
@@ -38,10 +87,10 @@ export default function Checkers({ onFinish, highScore }) {
         if (piece === 0) return moves;
 
         const directions = [];
-        if (piece === PLAYER || isKing(piece)) {
+        if (isRed(piece) || isKing(piece)) {
             directions.push([-1, -1], [-1, 1]);
         }
-        if (piece === AI || isKing(piece)) {
+        if (isWhite(piece) || isKing(piece)) {
             directions.push([1, -1], [1, 1]);
         }
 
@@ -51,7 +100,7 @@ export default function Checkers({ onFinish, highScore }) {
             if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE) {
                 if (b[nr][nc] === 0) {
                     moves.push({ r: nr, c: nc, capture: null });
-                } else if ((isPlayer(piece) && isAI(b[nr][nc])) || (isAI(piece) && isPlayer(b[nr][nc]))) {
+                } else if ((isRed(piece) && isWhite(b[nr][nc])) || (isWhite(piece) && isRed(b[nr][nc]))) {
                     const jr = nr + dr;
                     const jc = nc + dc;
                     if (jr >= 0 && jr < BOARD_SIZE && jc >= 0 && jc < BOARD_SIZE && b[jr][jc] === 0) {
@@ -64,7 +113,7 @@ export default function Checkers({ onFinish, highScore }) {
     };
 
     const handleSquareClick = (r, c) => {
-        if (turn !== PLAYER) return;
+        if (!isMyTurn()) return;
 
         if (selected) {
             const move = validMoves.find(m => m.r === r && m.c === c);
@@ -74,22 +123,23 @@ export default function Checkers({ onFinish, highScore }) {
             }
         }
 
-        if (isPlayer(board[r][c])) {
+        const piece = board[r][c];
+        if ((isRed(piece) && getMyColor() === RED_PLAYER) || (isWhite(piece) && getMyColor() === WHITE_PLAYER)) {
             setSelected({ r, c });
-            setValidMoves(getMoves(r, c, board, PLAYER));
+            setValidMoves(getMoves(r, c, board, turn));
         } else {
             setSelected(null);
             setValidMoves([]);
         }
     };
 
-    const makeMove = (fromR, fromC, toR, toC, capture) => {
+    const makeMove = async (fromR, fromC, toR, toC, capture) => {
         const newBoard = board.map(row => [...row]);
         let piece = newBoard[fromR][fromC];
 
         // Kinging
-        if (piece === PLAYER && toR === 0) piece = PLAYER_KING;
-        if (piece === AI && toR === BOARD_SIZE - 1) piece = AI_KING;
+        if (piece === RED_PLAYER && toR === 0) piece = RED_KING;
+        if (piece === WHITE_PLAYER && toR === BOARD_SIZE - 1) piece = WHITE_KING;
 
         newBoard[toR][toC] = piece;
         newBoard[fromR][fromC] = 0;
@@ -98,32 +148,55 @@ export default function Checkers({ onFinish, highScore }) {
             newBoard[capture.r][capture.c] = 0;
         }
 
-        setBoard(newBoard);
-        setSelected(null);
-        setValidMoves([]);
+        // Check for multi-jump
+        const possibleNextMoves = capture ? getMoves(toR, toC, newBoard, turn).filter(m => m.capture) : [];
+        const multiJump = possibleNextMoves.length > 0;
 
-        if (capture && getMoves(toR, toC, newBoard, turn).filter(m => m.capture).length > 0) {
-            // Check for multi-jump
-            setSelected({ r: toR, c: toC });
-            setValidMoves(getMoves(toR, toC, newBoard, turn).filter(m => m.capture));
+        if (isMultiplayer) {
+            const nextTurnUsername = multiJump ? currentUser.username : (match.player1.username === currentUser.username ? match.player2.username : match.player1.username);
+            try {
+                const updatedMatch = await MatchService.submitMove(matchId, JSON.stringify(newBoard), nextTurnUsername);
+                setMatch(updatedMatch);
+                setBoard(newBoard);
+                if (multiJump) {
+                    setSelected({ r: toR, c: toC });
+                    setValidMoves(possibleNextMoves);
+                } else {
+                    setSelected(null);
+                    setValidMoves([]);
+                    setTurn(updatedMatch.currentTurn === updatedMatch.player1.username ? RED_PLAYER : WHITE_PLAYER);
+                }
+            } catch (err) {
+                alert("Failed to submit move: " + err.message);
+            }
         } else {
-            setTurn(turn === PLAYER ? AI : PLAYER);
+            // Local AI Logic
+            setBoard(newBoard);
+            setSelected(null);
+            setValidMoves([]);
+
+            if (multiJump) {
+                setSelected({ r: toR, c: toC });
+                setValidMoves(possibleNextMoves);
+            } else {
+                setTurn(turn === RED_PLAYER ? WHITE_PLAYER : RED_PLAYER);
+            }
         }
     };
 
     useEffect(() => {
-        if (turn === AI) {
+        if (!isMultiplayer && turn === WHITE_PLAYER) {
             setTimeout(aiMove, 1000);
         }
         checkGameOver();
-    }, [turn]);
+    }, [turn, board]);
 
     const aiMove = () => {
         let allMoves = [];
         for (let r = 0; r < BOARD_SIZE; r++) {
             for (let c = 0; c < BOARD_SIZE; c++) {
-                if (isAI(board[r][c])) {
-                    const moves = getMoves(r, c, board, AI);
+                if (isWhite(board[r][c])) {
+                    const moves = getMoves(r, c, board, WHITE_PLAYER);
                     moves.forEach(m => allMoves.push({ fromR: r, fromC: c, ...m }));
                 }
             }
@@ -131,7 +204,6 @@ export default function Checkers({ onFinish, highScore }) {
 
         if (allMoves.length === 0) return;
 
-        // Prioritize captures
         const captures = allMoves.filter(m => m.capture);
         const move = captures.length > 0
             ? captures[Math.floor(Math.random() * captures.length)]
@@ -141,34 +213,53 @@ export default function Checkers({ onFinish, highScore }) {
     };
 
     const checkGameOver = () => {
-        let pCount = 0;
-        let aiCount = 0;
+        let redCount = 0;
+        let whiteCount = 0;
         board.forEach(row => row.forEach(cell => {
-            if (isPlayer(cell)) pCount++;
-            if (isAI(cell)) aiCount++;
+            if (isRed(cell)) redCount++;
+            if (isWhite(cell)) whiteCount++;
         }));
 
-        if (pCount === 0 || aiCount === 0) {
-            const won = pCount > 0;
-            const score = won ? 500 + pCount * 50 : pCount * 20;
-            GameService.submitScore('checkers', score).then(user => {
-                alert(won ? "You Won! 🎉" : "AI Won! Better luck next time.");
-                onFinish(user);
-            });
+        if (redCount === 0 || whiteCount === 0) {
+            const won = (getMyColor() === RED_PLAYER && redCount > 0) || (getMyColor() === WHITE_PLAYER && whiteCount > 0);
+            const score = won ? 500 : 100;
+
+            if (isMultiplayer) {
+                MatchService.finishMatch(matchId).then(() => {
+                    alert(won ? "You Won the Match! 🎉" : "Opponent Won! Good game.");
+                    onFinish(null); // Simple finish for multiplayer
+                });
+            } else {
+                GameService.submitScore('checkers', redCount > 0 ? 500 : 50).then(user => {
+                    alert(redCount > 0 ? "You Won! 🎉" : "AI Won! Better luck next time.");
+                    onFinish(user);
+                });
+            }
         }
     };
 
     return (
         <div style={{ textAlign: 'center', userSelect: 'none' }}>
-            <h2 style={{ marginBottom: '1rem' }}>🏁 Checkers</h2>
+            <h2 style={{ marginBottom: '1rem' }}>🏁 Checkers {isMultiplayer ? '(Multiplayer)' : '(Solo vs AI)'}</h2>
+            {isMultiplayer && match && (
+                <p style={{ color: '#888', marginBottom: '1rem' }}>
+                    Playing vs <strong>{match.player1.username === currentUser.username ? match.player2.username : match.player1.username}</strong>
+                </p>
+            )}
             <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginBottom: '1rem', fontSize: '1.1rem' }}>
-                <div style={{ color: turn === PLAYER ? 'var(--primary)' : '#888', fontWeight: turn === PLAYER ? 'bold' : 'normal' }}>
-                    Your Turn (Red)
+                <div style={{ color: turn === RED_PLAYER ? '#e53e3e' : '#888', fontWeight: turn === RED_PLAYER ? 'bold' : 'normal', borderBottom: turn === RED_PLAYER ? '2px solid #e53e3e' : 'none' }}>
+                    Red {match && match.player1.username === currentUser.username ? '(You)' : ''}
                 </div>
-                <div style={{ color: turn === AI ? '#fff' : '#888', fontWeight: turn === AI ? 'bold' : 'normal' }}>
-                    AI Turn (White)
+                <div style={{ color: turn === WHITE_PLAYER ? '#fff' : '#888', fontWeight: turn === WHITE_PLAYER ? 'bold' : 'normal', borderBottom: turn === WHITE_PLAYER ? '2px solid #fff' : 'none' }}>
+                    White {match && match.player2.username === currentUser.username ? '(You)' : ''}
                 </div>
             </div>
+
+            {!isMyTurn() && isMultiplayer && (
+                <div style={{ color: 'var(--primary)', marginBottom: '1rem', animation: 'pulse 2s infinite' }}>
+                    Waiting for opponent's move...
+                </div>
+            )}
 
             <div style={{
                 display: 'inline-block',
@@ -215,15 +306,16 @@ export default function Checkers({ onFinish, highScore }) {
                                             width: '36px',
                                             height: '36px',
                                             borderRadius: '50%',
-                                            background: isPlayer(cell) ? '#e53e3e' : '#fff',
+                                            background: isRed(cell) ? '#e53e3e' : '#fff',
                                             boxShadow: 'inset 0 -4px 0 rgba(0,0,0,0.2)',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            color: isPlayer(cell) ? '#fff' : '#000',
+                                            color: isRed(cell) ? '#fff' : '#000',
                                             fontSize: '1.2rem',
                                             fontWeight: 'bold',
-                                            transition: 'transform 0.2s'
+                                            transition: 'transform 0.2s',
+                                            transform: isSel ? 'scale(1.1)' : 'scale(1)'
                                         }}>
                                             {isKing(cell) ? '👑' : ''}
                                         </div>
@@ -236,12 +328,14 @@ export default function Checkers({ onFinish, highScore }) {
             </div>
 
             <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
-                <button
-                    onClick={() => { if (window.confirm("Restart game?")) setBoard(initialBoard()); setTurn(PLAYER); setSelected(null); setValidMoves([]); }}
-                    style={{ background: '#444' }}
-                >
-                    Restart
-                </button>
+                {!isMultiplayer && (
+                    <button
+                        onClick={() => { if (window.confirm("Restart game?")) { setBoard(initialBoard()); setTurn(RED_PLAYER); setSelected(null); setValidMoves([]); } }}
+                        style={{ background: '#444' }}
+                    >
+                        Restart
+                    </button>
+                )}
                 <button
                     onClick={() => onFinish(null)}
                     style={{ background: '#333' }}
@@ -249,6 +343,14 @@ export default function Checkers({ onFinish, highScore }) {
                     Back to Library
                 </button>
             </div>
+
+            <style>{`
+                @keyframes pulse {
+                    0% { opacity: 0.6; }
+                    50% { opacity: 1; }
+                    100% { opacity: 0.6; }
+                }
+            `}</style>
         </div>
     );
 }

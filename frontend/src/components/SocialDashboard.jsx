@@ -1,26 +1,31 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SocialService } from '../services/SocialService';
+import { MatchService } from '../services/MatchService';
+import { AuthService } from '../services/AuthService';
 
-export default function SocialDashboard({ onBack, onViewProfile }) {
+export default function SocialDashboard({ onBack, onViewProfile, onStartMatch }) {
     const [friends, setFriends] = useState([]);
     const [requests, setRequests] = useState([]);
+    const [matches, setMatches] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [statusMsg, setStatusMsg] = useState('');
-
-    const refreshData = () => {
-        SocialService.getFriends().then(setFriends).catch(console.error);
-        SocialService.getPendingRequests().then(setRequests).catch(console.error);
-    };
 
     useEffect(() => {
         refreshData();
     }, []);
 
+    const refreshData = () => {
+        SocialService.getFriends().then(setFriends).catch(console.error);
+        SocialService.getPendingRequests().then(setRequests).catch(console.error);
+        MatchService.getMyMatches().then(setMatches).catch(console.error);
+    };
+
     const handleSendRequest = (e) => {
         e.preventDefault();
-        SocialService.sendFriendRequest(searchQuery)
+        if (!searchQuery.trim()) return;
+        SocialService.sendFriendRequest(searchQuery.trim())
             .then(() => {
-                setStatusMsg(`Request sent to ${searchQuery}`);
+                setStatusMsg(`Friend request sent to ${searchQuery}!`);
                 setSearchQuery('');
                 setTimeout(() => setStatusMsg(''), 3000);
             })
@@ -28,7 +33,7 @@ export default function SocialDashboard({ onBack, onViewProfile }) {
     };
 
     const handleAccept = (requestId) => {
-        SocialService.acceptRequest(requestId)
+        SocialService.acceptFriendRequest(requestId)
             .then(() => {
                 refreshData();
                 setStatusMsg('Friend request accepted!');
@@ -37,18 +42,49 @@ export default function SocialDashboard({ onBack, onViewProfile }) {
             .catch(console.error);
     };
 
-    const handleUnfriend = async (username) => {
-        if (window.confirm(`Are you sure you want to unfriend ${username}?`)) {
-            try {
-                await SocialService.unfriend(username);
+    const handleUnfriend = (username) => {
+        if (!window.confirm(`Are you sure you want to unfriend ${username}?`)) return;
+        SocialService.unfriend(username)
+            .then(() => {
                 refreshData();
                 setStatusMsg(`Unfriended ${username}`);
                 setTimeout(() => setStatusMsg(''), 3000);
-            } catch (err) {
-                setStatusMsg('Error: ' + err.message);
+            })
+            .catch(err => setStatusMsg(`Error: ${err.message}`));
+    };
+
+    const handleChallenge = (friendUsername) => {
+        const BOARD_SIZE = 8;
+        const b = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(0));
+        for (let r = 0; r < 3; r++) {
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                if ((r + c) % 2 !== 0) b[r][c] = 2;
             }
         }
+        for (let r = 5; r < BOARD_SIZE; r++) {
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                if ((r + c) % 2 !== 0) b[r][c] = 1;
+            }
+        }
+
+        MatchService.invite(friendUsername, JSON.stringify(b))
+            .then(() => {
+                setStatusMsg(`Challenge sent to ${friendUsername}!`);
+                refreshData();
+                setTimeout(() => setStatusMsg(''), 3000);
+            })
+            .catch(err => setStatusMsg(`Error: ${err.message}`));
     };
+
+    const handleAcceptMatch = (matchId) => {
+        MatchService.acceptMatch(matchId)
+            .then((match) => {
+                onStartMatch(match.id);
+            })
+            .catch(console.error);
+    };
+
+    const currentUser = AuthService.getCurrentUser();
 
     return (
         <div style={{ maxWidth: '800px', margin: '0 auto', padding: '1rem' }}>
@@ -94,12 +130,18 @@ export default function SocialDashboard({ onBack, onViewProfile }) {
                                         <div style={{ fontWeight: 'bold' }}>{friend.displayName || friend.username}</div>
                                         <div style={{ fontSize: '0.7rem', color: '#888' }}>Level {friend.level}</div>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                        <button
+                                            style={{ fontSize: '0.7rem', padding: '4px 8px', background: 'var(--primary)', color: 'white' }}
+                                            onClick={() => handleChallenge(friend.username)}
+                                        >
+                                            Challenge 🎲
+                                        </button>
                                         <button
                                             style={{ fontSize: '0.7rem', padding: '4px 8px' }}
                                             onClick={() => onViewProfile(friend.username)}
                                         >
-                                            View Profile
+                                            Profile
                                         </button>
                                         <button
                                             style={{ fontSize: '0.7rem', padding: '4px 8px', background: 'rgba(255,107,107,0.1)', color: '#ff6b6b', border: '1px solid rgba(255,107,107,0.2)' }}
@@ -114,10 +156,10 @@ export default function SocialDashboard({ onBack, onViewProfile }) {
                     </section>
                 </div>
 
-                {/* Right: Pending Requests */}
-                <div>
+                {/* Right: Pending Requests & Match Invites */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                     <section style={{ background: 'rgba(255,255,255,0.05)', padding: '1.5rem', borderRadius: '12px' }}>
-                        <h3 style={{ marginTop: 0 }}>Pending Requests ({requests.length})</h3>
+                        <h3 style={{ marginTop: 0 }}>Pending Friends ({requests.length})</h3>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             {requests.length === 0 ? <p style={{ color: '#888' }}>No pending requests.</p> : requests.map(req => (
                                 <div key={req.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
@@ -130,6 +172,40 @@ export default function SocialDashboard({ onBack, onViewProfile }) {
                             ))}
                         </div>
                     </section>
+
+                    <section style={{ background: 'rgba(255,255,255,0.05)', padding: '1.5rem', borderRadius: '12px' }}>
+                        <h3 style={{ marginTop: 0 }}>Match Invites ({matches.filter(m => m.status === 'PENDING' && m.player2.username === currentUser?.username).length})</h3>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                            {matches.filter(m => m.status === 'PENDING' && m.player2.username === currentUser?.username).length === 0 ? <p style={{ color: '#888' }}>No new challenges.</p> : matches.filter(m => m.status === 'PENDING' && m.player2.username === currentUser?.username).map(match => (
+                                <div key={match.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(255,107,107,0.05)', border: '1px solid rgba(255,107,107,0.2)', borderRadius: '8px' }}>
+                                    <div>
+                                        <strong>{match.player1.username}</strong>
+                                        <div style={{ fontSize: '0.7rem', color: '#888' }}>challenged you to {match.gameType}</div>
+                                    </div>
+                                    <button onClick={() => handleAcceptMatch(match.id)} style={{ background: '#e53e3e', color: '#fff', fontWeight: 'bold' }}>Accept & Play</button>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    {matches.filter(m => m.status === 'ACTIVE').length > 0 && (
+                        <section style={{ background: 'rgba(255,255,255,0.05)', padding: '1.5rem', borderRadius: '12px' }}>
+                            <h3 style={{ marginTop: 0 }}>Ongoing Matches ({matches.filter(m => m.status === 'ACTIVE').length})</h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                {matches.filter(m => m.status === 'ACTIVE').map(match => (
+                                    <div key={match.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px' }}>
+                                        <div>
+                                            <strong>Vs {match.player1.username === currentUser?.username ? match.player2.username : match.player1.username}</strong>
+                                            <div style={{ fontSize: '0.7rem', color: match.currentTurn === currentUser?.username ? '#42d392' : '#888' }}>
+                                                {match.currentTurn === currentUser?.username ? "Your turn!" : "Waiting for opponent..."}
+                                            </div>
+                                        </div>
+                                        <button onClick={() => onStartMatch(match.id)} style={{ background: 'transparent', border: '1px solid var(--primary)', color: 'var(--primary)', fontSize: '0.8rem' }}>Rejoin</button>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
+                    )}
                 </div>
             </div>
         </div>
