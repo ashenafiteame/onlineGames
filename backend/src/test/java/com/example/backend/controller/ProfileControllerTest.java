@@ -80,9 +80,11 @@ class ProfileControllerTest {
         mockMvc.perform(put("/api/profiles/me")
                 .principal(principal)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"bio\":\"New Bio\", \"twitter\":\"@tester\"}"))
+                .content(
+                        "{\"bio\":\"New Bio\", \"twitter\":\"@tester\", \"displayName\":\"Test User\", \"avatarEmoji\":\"🐱\"}"))
                 .andExpect(status().isOk());
 
-        verify(userService).saveUser(argThat(u -> "New Bio".equals(u.getBio()) && "@tester".equals(u.getTwitter())));
+        verify(userService).saveUser(argThat(u -> "New Bio".equals(u.getBio()) && "@tester".equals(u.getTwitter()) &&
+                "Test User".equals(u.getDisplayName()) && "🐱".equals(u.getAvatarEmoji())));
     }
 }

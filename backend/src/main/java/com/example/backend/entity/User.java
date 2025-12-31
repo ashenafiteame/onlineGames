@@ -28,4 +28,6 @@ public class User {
     private String twitter;
     private String discord;
     private String github;
+    private String displayName;
+    private String avatarEmoji;
 }

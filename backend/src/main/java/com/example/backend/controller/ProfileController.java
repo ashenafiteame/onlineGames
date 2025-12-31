@@ -52,6 +52,10 @@ public class ProfileController {
             user.setDiscord(payload.get("discord"));
         if (payload.containsKey("github"))
             user.setGithub(payload.get("github"));
+        if (payload.containsKey("displayName"))
+            user.setDisplayName(payload.get("displayName"));
+        if (payload.containsKey("avatarEmoji"))
+            user.setAvatarEmoji(payload.get("avatarEmoji"));
 
         return ResponseEntity.ok(userService.saveUser(user));
     }
