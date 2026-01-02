@@ -34,6 +34,7 @@ public class GameService {
         seedGame("2048", "Join the numbers and get to the 2048 tile!", "2048");
         seedGame("Tetris", "Classic falling blocks puzzle game. Clear lines to score!", "tetris");
         seedGame("Connect Four", "Drop discs to connect 4 in a row. Challenge friends or AI!", "connectfour");
+        seedGame("Sudoku", "Fill the 9x9 grid so every row, column, and box contains 1-9!", "sudoku");
     }
 
     private void seedGame(String name, String description, String type) {

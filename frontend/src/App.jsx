@@ -23,6 +23,7 @@ import TicTacToe from './components/TicTacToe';
 import Game2048 from './components/Game2048';
 import Tetris from './components/Tetris';
 import ConnectFour from './components/ConnectFour';
+import Sudoku from './components/Sudoku';
 import OnlinePanel from './components/OnlinePanel';
 
 
@@ -178,6 +179,8 @@ function App() {
           highScore={getHighScore('connectfour')}
           matchId={selectedMatch}
         />;
+      case 'game-sudoku':
+        return <Sudoku onFinish={handleGameFinish} highScore={getHighScore('sudoku')} />;
       default:
         return <GameLibrary onSelectGame={(type) => setView(`game-${type}`)} />;
     }

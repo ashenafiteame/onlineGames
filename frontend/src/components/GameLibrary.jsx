@@ -17,7 +17,8 @@ export default function GameLibrary({ onSelectGame }) {
         'tictactoe': '/games/tictactoe.png',
         '2048': '/games/2048.png',
         'tetris': '/games/tetris.png',
-        'connectfour': '/games/connectfour.png'
+        'connectfour': '/games/connectfour.png',
+        'sudoku': '/games/sudoku.png'
     };
 
     useEffect(() => {

@@ -77,7 +77,7 @@ Planned game additions to expand the library and engagement.
 | Game | Description | Complexity | Status |
 |------|-------------|------------|--------|
 | **2048** | Slide tiles to combine numbers | ⭐ Easy | ✅ Done |
-| **Sudoku** | Fill 9x9 grid with numbers | ⭐⭐ Medium | Planned |
+| **Sudoku** | Fill 9x9 grid with numbers | ⭐⭐ Medium | ✅ Done |
 | **Minesweeper** | Reveal squares, avoid mines | ⭐ Easy | Planned |
 | **Tetris** | Classic falling blocks | ⭐⭐ Medium | ✅ Done |
 
