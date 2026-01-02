@@ -25,7 +25,8 @@ export default function GameLibrary({ onSelectGame }) {
         'minesweeper': '/games/minesweeper.png',
         'reversi': '/games/reversi.png',
         'battleship': '/games/battleship.png',
-        'flappybird': '/games/flappybird.png'
+        'flappybird': '/games/flappybird.png',
+        'brickbreaker': '/games/brickbreaker.png'
     };
 
     useEffect(() => {

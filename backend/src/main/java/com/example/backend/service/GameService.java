@@ -42,6 +42,7 @@ public class GameService {
         seedGame("Reversi", "Flip your opponent's pieces to dominate the board!", "reversi");
         seedGame("Battleship", "Sink the enemy fleet! Place ships and fire away.", "battleship");
         seedGame("Flappy Bird", "Tap to fly through the pipes. How far can you go?", "flappybird");
+        seedGame("Brick Breaker", "Destroy all bricks with the ball. Don't lose the ball!", "brickbreaker");
     }
 
     private void seedGame(String name, String description, String type) {

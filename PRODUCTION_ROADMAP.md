@@ -69,8 +69,8 @@ Planned game additions to expand the library and engagement.
 |------|-------------|------------|--------|
 | **Tic-Tac-Toe** | Classic 3x3 grid, quick matches | ⭐ Easy | ✅ Done |
 | **Connect Four** | Drop discs to connect 4 in a row | ⭐ Easy | ✅ Done |
-| **Battleship** | Place ships, guess opponent locations | ⭐⭐ Medium | Planned |
-| **Reversi/Othello** | Flip opponent pieces, strategic | ⭐⭐ Medium | Planned |
+| **Battleship** | Place ships, sink enemy fleet (AI) | ⭐⭐ Medium | ✅ Done |
+| **Reversi/Othello** | Territory strategy (AI) | ⭐⭐ Medium | ✅ Done |
 
 ### Solo Puzzle Games
 
@@ -78,7 +78,7 @@ Planned game additions to expand the library and engagement.
 |------|-------------|------------|--------|
 | **2048** | Slide tiles to combine numbers | ⭐ Easy | ✅ Done |
 | **Sudoku** | Fill 9x9 grid with numbers | ⭐⭐ Medium | ✅ Done |
-| **Minesweeper** | Reveal squares, avoid mines | ⭐ Easy | Planned |
+| **Minesweeper** | Reveal squares, avoid mines | ⭐ Easy | ✅ Done |
 | **Tetris** | Classic falling blocks | ⭐⭐ Medium | ✅ Done |
 
 ### Card Games
@@ -93,16 +93,8 @@ Planned game additions to expand the library and engagement.
 | Game | Description | Complexity | Status |
 |------|-------------|------------|--------|
 | **Whack-a-Mole** | Whack the moles! | ⭐ Easy | ✅ Done |
-| **Minesweeper** | Avoid the mines | ⭐⭐ Medium | ✅ Done |
-| **Reversi/Othello** | Territory strategy | ⭐⭐⭐ Hard | ✅ Done |
-| **Battleship** | Naval warfare | ⭐⭐⭐ Hard | ✅ Done |
 | **Flappy Bird** | Navigate the pipes | ⭐ Easy | ✅ Done |
-
-| Game | Description | Complexity | Status |
-|------|-------------|------------|--------|
-| **Whack-a-Mole** | Click moles as they pop up | ⭐ Easy | Planned |
-| **Flappy Bird Clone** | Tap to fly through pipes | ⭐ Easy | Planned |
-| **Brick Breaker** | Bounce ball to break bricks | ⭐⭐ Medium | Planned |
+| **Brick Breaker** | Bounce ball to break bricks | ⭐⭐ Medium | ✅ Done |
 
 ### Priority Recommendations
 

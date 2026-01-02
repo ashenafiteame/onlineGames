@@ -30,7 +30,9 @@ import WhackAMole from './components/WhackAMole';
 import Minesweeper from './components/Minesweeper';
 import Reversi from './components/Reversi';
 import Battleship from './components/Battleship';
+
 import FlappyBird from './components/FlappyBird';
+import BrickBreaker from './components/BrickBreaker';
 import OnlinePanel from './components/OnlinePanel';
 
 
@@ -202,6 +204,8 @@ function App() {
         return <Battleship onFinish={handleGameFinish} highScore={getHighScore('battleship')} />;
       case 'game-flappybird':
         return <FlappyBird onFinish={handleGameFinish} highScore={getHighScore('flappybird')} />;
+      case 'game-brickbreaker':
+        return <BrickBreaker onFinish={handleGameFinish} highScore={getHighScore('brickbreaker')} />;
       default:
         return <GameLibrary onSelectGame={(type) => setView(`game-${type}`)} />;
     }
