@@ -512,23 +512,42 @@ const Uno = ({ onFinish, highScore }) => {
                     <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 2 }}>
                         <defs>
                             <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                                <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255, 255, 255, 0.2)" />
+                                <polygon points="0 0, 10 3.5, 0 7" fill="rgba(255, 255, 255, 0.4)" />
                             </marker>
                             <marker id="arrowheadActive" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
                                 <polygon points="0 0, 10 3.5, 0 7" fill="#4CAF50" />
                             </marker>
                         </defs>
 
-                        <path d="M 45% 85% Q 25% 85% 10% 60%" fill="none" strokeWidth={direction === 1 && turn === 0 ? "4" : "2"} stroke={direction === 1 ? (turn === 0 ? "#4CAF50" : "rgba(255,255,255,0.1)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 ? (turn === 0 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
-                        <path d="M 10% 40% Q 25% 15% 45% 15%" fill="none" strokeWidth={direction === 1 && turn === 1 ? "4" : "2"} stroke={direction === 1 ? (turn === 1 ? "#4CAF50" : "rgba(255,255,255,0.1)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 ? (turn === 1 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
-                        <path d="M 55% 15% Q 75% 15% 90% 40%" fill="none" strokeWidth={direction === 1 && turn === 2 ? "4" : "2"} stroke={direction === 1 ? (turn === 2 ? "#4CAF50" : "rgba(255,255,255,0.1)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 ? (turn === 2 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
-                        <path d="M 90% 60% Q 75% 85% 55% 85%" fill="none" strokeWidth={direction === 1 && turn === 3 ? "4" : "2"} stroke={direction === 1 ? (turn === 3 ? "#4CAF50" : "rgba(255,255,255,0.1)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 ? (turn === 3 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+                        {/* Connecting Paths - Thicker and Brighter */}
+                        <path d="M 45% 85% Q 25% 85% 10% 60%" fill="none" strokeWidth={direction === 1 && turn === 0 ? "6" : "3"} stroke={direction === 1 ? (turn === 0 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 ? (turn === 0 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+                        <path d="M 10% 40% Q 25% 15% 45% 15%" fill="none" strokeWidth={direction === 1 && turn === 1 ? "6" : "3"} stroke={direction === 1 ? (turn === 1 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 ? (turn === 1 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+                        <path d="M 55% 15% Q 75% 15% 90% 40%" fill="none" strokeWidth={direction === 1 && turn === 2 ? "6" : "3"} stroke={direction === 1 ? (turn === 2 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 ? (turn === 2 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+                        <path d="M 90% 60% Q 75% 85% 55% 85%" fill="none" strokeWidth={direction === 1 && turn === 3 ? "6" : "3"} stroke={direction === 1 ? (turn === 3 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 ? (turn === 3 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
 
-                        <path d="M 55% 85% Q 75% 85% 90% 60%" fill="none" strokeWidth={direction === -1 && turn === 0 ? "4" : "2"} stroke={direction === -1 ? (turn === 0 ? "#4CAF50" : "rgba(255,255,255,0.1)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 ? (turn === 0 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
-                        <path d="M 90% 40% Q 75% 15% 55% 15%" fill="none" strokeWidth={direction === -1 && turn === 3 ? "4" : "2"} stroke={direction === -1 ? (turn === 3 ? "#4CAF50" : "rgba(255,255,255,0.1)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 ? (turn === 3 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
-                        <path d="M 45% 15% Q 25% 15% 10% 40%" fill="none" strokeWidth={direction === -1 && turn === 2 ? "4" : "2"} stroke={direction === -1 ? (turn === 2 ? "#4CAF50" : "rgba(255,255,255,0.1)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 ? (turn === 2 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
-                        <path d="M 10% 60% Q 25% 85% 45% 85%" fill="none" strokeWidth={direction === -1 && turn === 1 ? "4" : "2"} stroke={direction === -1 ? (turn === 1 ? "#4CAF50" : "rgba(255,255,255,0.1)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 ? (turn === 1 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+                        <path d="M 55% 85% Q 75% 85% 90% 60%" fill="none" strokeWidth={direction === -1 && turn === 0 ? "6" : "3"} stroke={direction === -1 ? (turn === 0 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 ? (turn === 0 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+                        <path d="M 90% 40% Q 75% 15% 55% 15%" fill="none" strokeWidth={direction === -1 && turn === 3 ? "6" : "3"} stroke={direction === -1 ? (turn === 3 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 ? (turn === 3 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+                        <path d="M 45% 15% Q 25% 15% 10% 40%" fill="none" strokeWidth={direction === -1 && turn === 2 ? "6" : "3"} stroke={direction === -1 ? (turn === 2 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 ? (turn === 2 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+                        <path d="M 10% 60% Q 25% 85% 45% 85%" fill="none" strokeWidth={direction === -1 && turn === 1 ? "6" : "3"} stroke={direction === -1 ? (turn === 1 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 ? (turn === 1 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
                     </svg>
+
+                    {/* Central Spin Indicator */}
+                    <div style={{
+                        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                        width: '350px', height: '350px', pointerEvents: 'none', zIndex: 0,
+                        opacity: 0.15
+                    }}>
+                        <div style={{
+                            width: '100%', height: '100%', borderRadius: '50%', border: '4px dashed white',
+                            transform: `scaleX(${direction})`,
+                            transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                            display: 'flex', justifyContent: 'center', alignItems: 'center'
+                        }}>
+                            <div style={{ position: 'absolute', top: '-10px', fontSize: '40px', background: '#222', padding: '0 10px' }}>▶</div>
+                            <div style={{ position: 'absolute', bottom: '-10px', fontSize: '40px', background: '#222', padding: '0 10px', transform: 'rotate(180deg)' }}>▶</div>
+                        </div>
+
+                    </div>
 
                     <div ref={el => playerRefs.current[2] = el} style={{ position: 'absolute', top: '90px', ...getPlayerStyle(2), zIndex: 1 }}>
                         <div style={{ textAlign: 'center', marginBottom: '5px', fontWeight: 'bold' }}>{players[2]?.name}</div>
