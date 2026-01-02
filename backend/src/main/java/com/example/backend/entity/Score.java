@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "scores")
@@ -18,6 +19,9 @@ public class Score {
 
     private int scoreValue;
 
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "user_id")
     @JsonIgnoreProperties({ "password", "role", "level", "totalScore" })
@@ -26,4 +30,9 @@ public class Score {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "game_id")
     private Game game;
+
+    @PrePersist
+    protected void onCreate() {
+        this.createdAt = LocalDateTime.now();
+    }
 }

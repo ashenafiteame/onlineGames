@@ -48,5 +48,16 @@ export const AuthService = {
     getAuthHeader: () => {
         const user = JSON.parse(localStorage.getItem('user'));
         return user ? user.authHeader : null;
+    },
+
+    updateCurrentUser: (updatedUser) => {
+        const currentUser = JSON.parse(localStorage.getItem('user'));
+        if (currentUser) {
+            // Preserve authHeader, update everything else
+            const mergedUser = { ...currentUser, ...updatedUser, authHeader: currentUser.authHeader };
+            localStorage.setItem('user', JSON.stringify(mergedUser));
+            return mergedUser;
+        }
+        return null;
     }
 };

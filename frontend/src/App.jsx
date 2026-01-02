@@ -21,6 +21,8 @@ import Checkers from './components/Checkers';
 import Chess from './components/Chess';
 import TicTacToe from './components/TicTacToe';
 import Game2048 from './components/Game2048';
+import Tetris from './components/Tetris';
+import ConnectFour from './components/ConnectFour';
 import OnlinePanel from './components/OnlinePanel';
 
 
@@ -69,12 +71,17 @@ function App() {
   };
 
   const handleGameFinish = (updatedUser) => {
+    // Always refresh user from localStorage to pick up any score updates
+    const latestUser = AuthService.getCurrentUser();
+    if (latestUser) {
+      setUser(latestUser);
+    }
     if (updatedUser) {
       setUser(prev => ({ ...prev, ...updatedUser }));
-      localStorage.setItem('user', JSON.stringify({ ...AuthService.getCurrentUser(), ...updatedUser }));
-      GameService.getMyScores().then(setScores).catch(console.error);
-      AchievementService.getMyAchievements().then(setAchievements).catch(console.error);
+      localStorage.setItem('user', JSON.stringify({ ...latestUser, ...updatedUser }));
     }
+    GameService.getMyScores().then(setScores).catch(console.error);
+    AchievementService.getMyAchievements().then(setAchievements).catch(console.error);
     setView('library');
   };
 
@@ -160,6 +167,17 @@ function App() {
         />;
       case 'game-2048':
         return <Game2048 onFinish={handleGameFinish} highScore={getHighScore('2048')} />;
+      case 'game-tetris':
+        return <Tetris onFinish={handleGameFinish} highScore={getHighScore('tetris')} />;
+      case 'game-connectfour':
+        return <ConnectFour
+          onFinish={(user) => {
+            handleGameFinish(user);
+            setSelectedMatch(null);
+          }}
+          highScore={getHighScore('connectfour')}
+          matchId={selectedMatch}
+        />;
       default:
         return <GameLibrary onSelectGame={(type) => setView(`game-${type}`)} />;
     }

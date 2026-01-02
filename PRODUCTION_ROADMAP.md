@@ -67,8 +67,8 @@ Planned game additions to expand the library and engagement.
 
 | Game | Description | Complexity | Status |
 |------|-------------|------------|--------|
-| **Tic-Tac-Toe** | Classic 3x3 grid, quick matches | ⭐ Easy | Planned |
-| **Connect Four** | Drop discs to connect 4 in a row | ⭐ Easy | Planned |
+| **Tic-Tac-Toe** | Classic 3x3 grid, quick matches | ⭐ Easy | ✅ Done |
+| **Connect Four** | Drop discs to connect 4 in a row | ⭐ Easy | ✅ Done |
 | **Battleship** | Place ships, guess opponent locations | ⭐⭐ Medium | Planned |
 | **Reversi/Othello** | Flip opponent pieces, strategic | ⭐⭐ Medium | Planned |
 
@@ -76,10 +76,10 @@ Planned game additions to expand the library and engagement.
 
 | Game | Description | Complexity | Status |
 |------|-------------|------------|--------|
-| **2048** | Slide tiles to combine numbers | ⭐ Easy | Planned |
+| **2048** | Slide tiles to combine numbers | ⭐ Easy | ✅ Done |
 | **Sudoku** | Fill 9x9 grid with numbers | ⭐⭐ Medium | Planned |
 | **Minesweeper** | Reveal squares, avoid mines | ⭐ Easy | Planned |
-| **Tetris** | Classic falling blocks | ⭐⭐ Medium | Planned |
+| **Tetris** | Classic falling blocks | ⭐⭐ Medium | ✅ Done |
 
 ### Card Games
 
@@ -98,6 +98,6 @@ Planned game additions to expand the library and engagement.
 
 ### Priority Recommendations
 
-1. **Connect Four** - Easy to implement, uses multiplayer system, very popular
-2. **2048** - Highly addictive, solo play, great for mobile
-3. **Tic-Tac-Toe** - Super quick to build, perfect multiplayer starter
+1. ~~**Connect Four** - Easy to implement, uses multiplayer system, very popular~~ ✅ Done
+2. ~~**2048** - Highly addictive, solo play, great for mobile~~ ✅ Done
+3. ~~**Tic-Tac-Toe** - Super quick to build, perfect multiplayer starter~~ ✅ Done

@@ -25,7 +25,10 @@ export const GameService = {
             body: JSON.stringify({ gameType, score })
         });
         if (!response.ok) throw new Error('Failed to submit score');
-        return response.json(); // Returns updated user with new level/score
+        const updatedUser = await response.json();
+        // Update localStorage with the new user data (updated totalScore, level, etc.)
+        AuthService.updateCurrentUser(updatedUser);
+        return updatedUser;
     },
 
     getMyScores: async () => {

@@ -38,6 +38,10 @@ const getTicTacToeBoard = () => {
     return Array(9).fill(null);
 };
 
+const getConnectFourBoard = () => {
+    return Array.from({ length: 6 }, () => Array(7).fill(null));
+};
+
 export default function OnlinePanel({ onStartMatch }) {
     const [onlineUsers, setOnlineUsers] = useState([]);
     const [matches, setMatches] = useState([]);
@@ -65,8 +69,11 @@ export default function OnlinePanel({ onStartMatch }) {
     const handleChallenge = (username, gameType) => {
         let board;
         if (gameType === 'chess') board = getChessBoard();
-        else if (gameType === 'tictactoe') board = getTicTacToeBoard();
-        else board = getCheckersBoard();
+        else if (gameType === 'tictactoe') {
+            board = getTicTacToeBoard();
+        } else if (gameType === 'connectfour') {
+            board = getConnectFourBoard();
+        } else board = getCheckersBoard();
 
         MatchService.invite(username, JSON.stringify(board), gameType)
             .then(() => {
@@ -118,6 +125,9 @@ export default function OnlinePanel({ onStartMatch }) {
                             </button>
                             <button onClick={() => handleChallenge(challengeUser, 'tictactoe')} style={{ padding: '12px 20px', fontSize: '1.2rem' }}>
                                 ❌ Tic-Tac-Toe
+                            </button>
+                            <button onClick={() => handleChallenge(challengeUser, 'connectfour')} style={{ padding: '12px 20px', fontSize: '1.2rem' }}>
+                                🔴 Connect Four
                             </button>
                         </div>
                         <button onClick={() => setChallengeUser(null)} style={{ marginTop: '1rem', background: '#444', fontSize: '0.8rem' }}>Cancel</button>
