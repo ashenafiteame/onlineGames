@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/scores")
@@ -24,15 +23,14 @@ public class ScoreController {
     private UserService userService;
 
     @PostMapping
-    public ResponseEntity<?> submitScore(@RequestBody Map<String, Object> payload, Principal principal) {
+    public ResponseEntity<?> submitScore(
+            @jakarta.validation.Valid @RequestBody com.example.backend.dto.SubmitScoreRequest request,
+            Principal principal) {
         User user = userService.findByUsername(principal.getName())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        String gameType = (String) payload.get("gameType");
-        Integer scoreValue = (Integer) payload.get("score");
-
         try {
-            User updatedUser = scoreService.submitScore(user, gameType, scoreValue);
+            User updatedUser = scoreService.submitScore(user, request.getGameType(), request.getScore());
             return ResponseEntity.ok(updatedUser);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());

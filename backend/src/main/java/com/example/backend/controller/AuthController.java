@@ -16,7 +16,7 @@ public class AuthController {
     private UserService userService;
 
     @PostMapping("/signup")
-    public ResponseEntity<?> signup(@RequestBody User user) {
+    public ResponseEntity<?> signup(@jakarta.validation.Valid @RequestBody User user) {
         try {
             userService.registerUser(user);
             return ResponseEntity.ok("User registered successfully");

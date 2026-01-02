@@ -11,7 +11,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/profiles")
@@ -40,22 +39,24 @@ public class ProfileController {
     }
 
     @PutMapping("/me")
-    public ResponseEntity<User> updateProfile(@RequestBody Map<String, String> payload, Principal principal) {
+    public ResponseEntity<User> updateProfile(
+            @jakarta.validation.Valid @RequestBody com.example.backend.dto.UpdateProfileRequest request,
+            Principal principal) {
         User user = userService.findByUsername(principal.getName())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        if (payload.containsKey("bio"))
-            user.setBio(payload.get("bio"));
-        if (payload.containsKey("twitter"))
-            user.setTwitter(payload.get("twitter"));
-        if (payload.containsKey("discord"))
-            user.setDiscord(payload.get("discord"));
-        if (payload.containsKey("github"))
-            user.setGithub(payload.get("github"));
-        if (payload.containsKey("displayName"))
-            user.setDisplayName(payload.get("displayName"));
-        if (payload.containsKey("avatarEmoji"))
-            user.setAvatarEmoji(payload.get("avatarEmoji"));
+        if (request.getBio() != null)
+            user.setBio(request.getBio());
+        if (request.getTwitter() != null)
+            user.setTwitter(request.getTwitter());
+        if (request.getDiscord() != null)
+            user.setDiscord(request.getDiscord());
+        if (request.getGithub() != null)
+            user.setGithub(request.getGithub());
+        if (request.getDisplayName() != null)
+            user.setDisplayName(request.getDisplayName());
+        if (request.getAvatarEmoji() != null)
+            user.setAvatarEmoji(request.getAvatarEmoji());
 
         return ResponseEntity.ok(userService.saveUser(user));
     }

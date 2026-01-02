@@ -9,6 +9,13 @@ export default function Signup({ switchToLogin }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters long.');
+            setSuccess('');
+            return;
+        }
+
         try {
             await AuthService.signup(username, password);
             setSuccess('Registration successful! Please login.');

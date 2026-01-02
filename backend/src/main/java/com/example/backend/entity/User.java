@@ -20,8 +20,12 @@ public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @jakarta.validation.constraints.NotBlank(message = "Username is required")
+    @jakarta.validation.constraints.Size(min = 3, max = 20, message = "Username must be between 3 and 20 characters")
     private String username;
     @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
+    @jakarta.validation.constraints.NotBlank(message = "Password is required")
+    @jakarta.validation.constraints.Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
     private String role;
     private Integer level = 1;

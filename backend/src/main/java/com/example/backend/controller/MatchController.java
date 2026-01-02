@@ -10,7 +10,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/matches")
@@ -29,13 +28,13 @@ public class MatchController {
     }
 
     @PostMapping("/invite/{username}")
-    public ResponseEntity<?> invite(@PathVariable String username, @RequestBody Map<String, String> body,
+    public ResponseEntity<?> invite(@PathVariable String username,
+            @jakarta.validation.Valid @RequestBody com.example.backend.dto.InviteRequest request,
             Authentication auth) {
         User user = userService.findByUsername(auth.getName()).get();
-        String gameType = body.getOrDefault("gameType", "checkers");
-        String initialBoard = body.get("initialBoard");
         try {
-            return ResponseEntity.ok(matchService.createMatchInvite(user, username, gameType, initialBoard));
+            return ResponseEntity.ok(
+                    matchService.createMatchInvite(user, username, request.getGameType(), request.getInitialBoard()));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -52,13 +51,13 @@ public class MatchController {
     }
 
     @PostMapping("/{matchId}/move")
-    public ResponseEntity<?> move(@PathVariable Long matchId, @RequestBody Map<String, String> body,
+    public ResponseEntity<?> move(@PathVariable Long matchId,
+            @jakarta.validation.Valid @RequestBody com.example.backend.dto.MoveRequest request,
             Authentication auth) {
         User user = userService.findByUsername(auth.getName()).get();
-        String boardData = body.get("boardData");
-        String nextTurn = body.get("nextTurn");
         try {
-            return ResponseEntity.ok(matchService.updateMove(matchId, boardData, nextTurn, user));
+            return ResponseEntity
+                    .ok(matchService.updateMove(matchId, request.getBoardData(), request.getNextTurn(), user));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -72,9 +71,9 @@ public class MatchController {
     }
 
     @PostMapping("/{matchId}/finish")
-    public ResponseEntity<?> finish(@PathVariable Long matchId, @RequestBody Map<String, String> body) {
-        String status = body.getOrDefault("status", "FINISHED");
-        return ResponseEntity.ok(matchService.finishMatch(matchId, status));
+    public ResponseEntity<?> finish(@PathVariable Long matchId,
+            @RequestBody com.example.backend.dto.FinishMatchRequest request) {
+        return ResponseEntity.ok(matchService.finishMatch(matchId, request.getStatus()));
     }
 
     @PostMapping("/{matchId}/decline")
