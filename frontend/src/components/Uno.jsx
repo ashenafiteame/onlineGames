@@ -172,11 +172,14 @@ const Uno = ({ onFinish, highScore }) => {
         if (highScore > localHighScore) setLocalHighScore(highScore);
     }, [highScore]);
 
-    const startGame = () => {
+    const startGame = (totalPlayers) => {
         const newDeck = shuffle(createDeck());
         const newPlayers = [];
 
-        for (let i = 0; i < botCount + 1; i++) {
+        // 1 Human + (totalPlayers - 1) Bots
+        const botCount = totalPlayers - 1;
+
+        for (let i = 0; i < totalPlayers; i++) {
             const hand = [];
             for (let j = 0; j < 7; j++) {
                 hand.push(newDeck.pop());
@@ -464,8 +467,13 @@ const Uno = ({ onFinish, highScore }) => {
 
         switch (turn) {
             case 0: return { ...baseStyle, bottom: '25%', left: '50%', transform: 'translateX(-50%)' };
-            case 1: return { ...baseStyle, top: '50%', left: '160px', transform: 'translateY(-50%)' };
-            case 2: return { ...baseStyle, top: '180px', left: '50%', transform: 'translateX(-50%)' };
+            case 1:
+                if (players.length === 2) return { ...baseStyle, top: '180px', left: '50%', transform: 'translateX(-50%)' };
+                if (players.length === 3) return { ...baseStyle, top: '160px', left: '160px' };
+                return { ...baseStyle, top: '50%', left: '160px', transform: 'translateY(-50%)' };
+            case 2:
+                if (players.length === 3) return { ...baseStyle, top: '160px', right: '160px' };
+                return { ...baseStyle, top: '180px', left: '50%', transform: 'translateX(-50%)' };
             case 3: return { ...baseStyle, top: '50%', right: '160px', transform: 'translateY(-50%)' };
             default: return baseStyle;
         }
@@ -499,14 +507,27 @@ const Uno = ({ onFinish, highScore }) => {
             {pendingWildMove && <ColorPickerModal onSelect={handleColorSelect} />}
 
             {!gameStarted && !winner ? (
-                <button
-                    onClick={startGame}
-                    style={{ padding: '15px 40px', fontSize: '20px', background: '#4CAF50', border: 'none', borderRadius: '8px', color: 'white', cursor: 'pointer', boxShadow: '0 4px 0 #2e7d32', transition: 'transform 0.1s' }}
-                    onMouseDown={(e) => e.target.style.transform = 'scale(0.95)'}
-                    onMouseUp={(e) => e.target.style.transform = 'scale(1)'}
-                >
-                    Start Game
-                </button>
+                <div style={{ textAlign: 'center', zIndex: 10 }}>
+                    <h2 style={{ marginBottom: '20px', color: '#ccc' }}>Select Players</h2>
+                    <div style={{ display: 'flex', gap: '20px', justifyContent: 'center' }}>
+                        {[2, 3, 4].map(num => (
+                            <button
+                                key={num}
+                                onClick={() => startGame(num)}
+                                style={{
+                                    padding: '15px 30px', fontSize: '24px', fontWeight: 'bold',
+                                    background: 'linear-gradient(135deg, #4CAF50, #2E7D32)',
+                                    border: 'none', borderRadius: '12px', color: 'white', cursor: 'pointer',
+                                    boxShadow: '0 5px 15px rgba(0,0,0,0.3)', transition: 'transform 0.1s'
+                                }}
+                                onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+                                onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+                            >
+                                {num} Players
+                            </button>
+                        ))}
+                    </div>
+                </div>
             ) : (
                 <>
                     <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 2 }}>
@@ -519,16 +540,48 @@ const Uno = ({ onFinish, highScore }) => {
                             </marker>
                         </defs>
 
-                        {/* Connecting Paths - Thicker and Brighter */}
-                        <path d="M 45% 85% Q 25% 85% 10% 60%" fill="none" strokeWidth={direction === 1 && turn === 0 ? "6" : "3"} stroke={direction === 1 ? (turn === 0 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 ? (turn === 0 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
-                        <path d="M 10% 40% Q 25% 15% 45% 15%" fill="none" strokeWidth={direction === 1 && turn === 1 ? "6" : "3"} stroke={direction === 1 ? (turn === 1 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 ? (turn === 1 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
-                        <path d="M 55% 15% Q 75% 15% 90% 40%" fill="none" strokeWidth={direction === 1 && turn === 2 ? "6" : "3"} stroke={direction === 1 ? (turn === 2 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 ? (turn === 2 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
-                        <path d="M 90% 60% Q 75% 85% 55% 85%" fill="none" strokeWidth={direction === 1 && turn === 3 ? "6" : "3"} stroke={direction === 1 ? (turn === 3 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 ? (turn === 3 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+                        {/* Connecting Paths - Dynamic based on player count */}
+                        {players.length === 2 && (
+                            <>
+                                <path d="M 50% 80% L 50% 20%" fill="none" strokeWidth={direction === 1 && turn === 0 ? "6" : "3"} stroke={direction === 1 ? (turn === 0 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 && turn === 0 ? "url(#arrowheadActive)" : "none"} style={{ transition: 'all 0.3s' }} />
+                                <path d="M 50% 20% L 50% 80%" fill="none" strokeWidth={direction === 1 && turn === 1 ? "6" : "3"} stroke={direction === 1 ? (turn === 1 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 && turn === 1 ? "url(#arrowheadActive)" : "none"} style={{ transition: 'all 0.3s' }} />
+                                {/* Reverse */}
+                                <path d="M 50% 80% L 50% 20%" fill="none" strokeWidth={direction === -1 && turn === 0 ? "6" : "3"} stroke={direction === -1 ? (turn === 0 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 && turn === 0 ? "url(#arrowheadActive)" : "none"} style={{ transition: 'all 0.3s' }} />
+                                <path d="M 50% 20% L 50% 80%" fill="none" strokeWidth={direction === -1 && turn === 1 ? "6" : "3"} stroke={direction === -1 ? (turn === 1 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 && turn === 1 ? "url(#arrowheadActive)" : "none"} style={{ transition: 'all 0.3s' }} />
+                            </>
+                        )}
 
-                        <path d="M 55% 85% Q 75% 85% 90% 60%" fill="none" strokeWidth={direction === -1 && turn === 0 ? "6" : "3"} stroke={direction === -1 ? (turn === 0 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 ? (turn === 0 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
-                        <path d="M 90% 40% Q 75% 15% 55% 15%" fill="none" strokeWidth={direction === -1 && turn === 3 ? "6" : "3"} stroke={direction === -1 ? (turn === 3 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 ? (turn === 3 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
-                        <path d="M 45% 15% Q 25% 15% 10% 40%" fill="none" strokeWidth={direction === -1 && turn === 2 ? "6" : "3"} stroke={direction === -1 ? (turn === 2 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 ? (turn === 2 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
-                        <path d="M 10% 60% Q 25% 85% 45% 85%" fill="none" strokeWidth={direction === -1 && turn === 1 ? "6" : "3"} stroke={direction === -1 ? (turn === 1 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 ? (turn === 1 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+                        {players.length === 3 && (
+                            <>
+                                {/* 0 (Bottom) -> 1 (Top Left) */}
+                                <path d="M 45% 85% Q 25% 60% 15% 35%" fill="none" strokeWidth={direction === 1 && turn === 0 ? "6" : "3"} stroke={direction === 1 ? (turn === 0 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 && turn === 0 ? "url(#arrowheadActive)" : "none"} />
+
+                                {/* 1 (Top Left) -> 2 (Top Right) */}
+                                <path d="M 15% 35% Q 50% 10% 85% 35%" fill="none" strokeWidth={direction === 1 && turn === 1 ? "6" : "3"} stroke={direction === 1 ? (turn === 1 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 && turn === 1 ? "url(#arrowheadActive)" : "none"} />
+
+                                {/* 2 (Top Right) -> 0 (Bottom) */}
+                                <path d="M 85% 35% Q 75% 60% 55% 85%" fill="none" strokeWidth={direction === 1 && turn === 2 ? "6" : "3"} stroke={direction === 1 ? (turn === 2 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 && turn === 2 ? "url(#arrowheadActive)" : "none"} />
+
+                                {/* Reverse 3P */}
+                                <path d="M 55% 85% Q 75% 60% 85% 35%" fill="none" strokeWidth={direction === -1 && turn === 0 ? "6" : "3"} stroke={direction === -1 ? (turn === 0 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 && turn === 0 ? "url(#arrowheadActive)" : "none"} />
+                                <path d="M 85% 35% Q 50% 10% 15% 35%" fill="none" strokeWidth={direction === -1 && turn === 2 ? "6" : "3"} stroke={direction === -1 ? (turn === 2 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 && turn === 2 ? "url(#arrowheadActive)" : "none"} />
+                                <path d="M 15% 35% Q 25% 60% 45% 85%" fill="none" strokeWidth={direction === -1 && turn === 1 ? "6" : "3"} stroke={direction === -1 ? (turn === 1 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 && turn === 1 ? "url(#arrowheadActive)" : "none"} />
+                            </>
+                        )}
+
+                        {players.length === 4 && (
+                            <>
+                                <path d="M 45% 85% Q 25% 85% 10% 60%" fill="none" strokeWidth={direction === 1 && turn === 0 ? "6" : "3"} stroke={direction === 1 ? (turn === 0 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 ? (turn === 0 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+                                <path d="M 10% 40% Q 25% 15% 45% 15%" fill="none" strokeWidth={direction === 1 && turn === 1 ? "6" : "3"} stroke={direction === 1 ? (turn === 1 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 ? (turn === 1 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+                                <path d="M 55% 15% Q 75% 15% 90% 40%" fill="none" strokeWidth={direction === 1 && turn === 2 ? "6" : "3"} stroke={direction === 1 ? (turn === 2 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 ? (turn === 2 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+                                <path d="M 90% 60% Q 75% 85% 55% 85%" fill="none" strokeWidth={direction === 1 && turn === 3 ? "6" : "3"} stroke={direction === 1 ? (turn === 3 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === 1 ? (turn === 3 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+
+                                <path d="M 55% 85% Q 75% 85% 90% 60%" fill="none" strokeWidth={direction === -1 && turn === 0 ? "6" : "3"} stroke={direction === -1 ? (turn === 0 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 ? (turn === 0 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+                                <path d="M 90% 40% Q 75% 15% 55% 15%" fill="none" strokeWidth={direction === -1 && turn === 3 ? "6" : "3"} stroke={direction === -1 ? (turn === 3 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 ? (turn === 3 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+                                <path d="M 45% 15% Q 25% 15% 10% 40%" fill="none" strokeWidth={direction === -1 && turn === 2 ? "6" : "3"} stroke={direction === -1 ? (turn === 2 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 ? (turn === 2 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+                                <path d="M 10% 60% Q 25% 85% 45% 85%" fill="none" strokeWidth={direction === -1 && turn === 1 ? "6" : "3"} stroke={direction === -1 ? (turn === 1 ? "#4CAF50" : "rgba(255,255,255,0.2)") : "rgba(0,0,0,0)"} markerEnd={direction === -1 ? (turn === 1 ? "url(#arrowheadActive)" : "url(#arrowhead)") : "none"} style={{ transition: 'all 0.3s' }} />
+                            </>
+                        )}
                     </svg>
 
                     {/* Central Spin Indicator */}
@@ -549,32 +602,66 @@ const Uno = ({ onFinish, highScore }) => {
 
                     </div>
 
-                    <div ref={el => playerRefs.current[2] = el} style={{ position: 'absolute', top: '90px', ...getPlayerStyle(2), zIndex: 1 }}>
-                        <div style={{ textAlign: 'center', marginBottom: '5px', fontWeight: 'bold' }}>{players[2]?.name}</div>
-                        <div style={{ display: 'flex', gap: '-20px' }}>
-                            {players[2]?.hand.map((_, i) => (
-                                <div key={i} style={{ width: '45px', height: '65px', background: '#333', borderRadius: '8px', border: '2px solid #555', boxShadow: '0 2px 4px rgba(0,0,0,0.3)', marginLeft: i > 0 ? '-20px' : 0 }} />
-                            ))}
+                    {/* Top Player (Player 2 in 4-player game, or Player 1 in 2-player game) */}
+                    {(players.length === 2 || players.length === 4) && (
+                        <div ref={el => playerRefs.current[players.length === 2 ? 1 : 2] = el} style={{ position: 'absolute', top: '90px', ...getPlayerStyle(players.length === 2 ? 1 : 2), zIndex: 1 }}>
+                            <div style={{ textAlign: 'center', marginBottom: '5px', fontWeight: 'bold' }}>{players[players.length === 2 ? 1 : 2]?.name}</div>
+                            <div style={{ display: 'flex', gap: '-20px' }}>
+                                {players[players.length === 2 ? 1 : 2]?.hand.map((_, i) => (
+                                    <div key={i} style={{ width: '45px', height: '65px', background: '#333', borderRadius: '8px', border: '2px solid #555', boxShadow: '0 2px 4px rgba(0,0,0,0.3)', marginLeft: i > 0 ? '-20px' : 0 }} />
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    <div ref={el => playerRefs.current[1] = el} style={{ position: 'absolute', left: '20px', top: '50%', transform: getPlayerStyle(1).transform + ' translateY(-50%)', opacity: getPlayerStyle(1).opacity, transition: 'all 0.5s ease', zIndex: 1 }}>
-                        <div style={{ marginBottom: '5px', fontWeight: 'bold' }}>{players[1]?.name}</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '-30px' }}>
-                            {players[1]?.hand.map((_, i) => (
-                                <div key={i} style={{ width: '65px', height: '45px', background: '#333', borderRadius: '8px', border: '2px solid #555', boxShadow: '0 2px 4px rgba(0,0,0,0.3)', marginTop: i > 0 ? '-30px' : 0 }} />
-                            ))}
+                    {/* Left Player (Player 1 in 4-player game) */}
+                    {players.length === 4 && (
+                        <div ref={el => playerRefs.current[1] = el} style={{ position: 'absolute', left: '20px', top: '50%', transform: getPlayerStyle(1).transform + ' translateY(-50%)', opacity: getPlayerStyle(1).opacity, transition: 'all 0.5s ease', zIndex: 1 }}>
+                            <div style={{ marginBottom: '5px', fontWeight: 'bold' }}>{players[1]?.name}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '-30px' }}>
+                                {players[1]?.hand.map((_, i) => (
+                                    <div key={i} style={{ width: '65px', height: '45px', background: '#333', borderRadius: '8px', border: '2px solid #555', boxShadow: '0 2px 4px rgba(0,0,0,0.3)', marginTop: i > 0 ? '-30px' : 0 }} />
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
 
-                    <div ref={el => playerRefs.current[3] = el} style={{ position: 'absolute', right: '20px', top: '50%', transform: getPlayerStyle(3).transform + ' translateY(-50%)', opacity: getPlayerStyle(3).opacity, transition: 'all 0.5s ease', zIndex: 1 }}>
-                        <div style={{ marginBottom: '5px', textAlign: 'right', fontWeight: 'bold' }}>{players[3]?.name}</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '-30px' }}>
-                            {players[3]?.hand.map((_, i) => (
-                                <div key={i} style={{ width: '65px', height: '45px', background: '#333', borderRadius: '8px', border: '2px solid #555', boxShadow: '0 2px 4px rgba(0,0,0,0.3)', marginTop: i > 0 ? '-30px' : 0 }} />
-                            ))}
+                    {/* Right Player (Player 3 in 4-player game) */}
+                    {players.length === 4 && (
+                        <div ref={el => playerRefs.current[3] = el} style={{ position: 'absolute', right: '20px', top: '50%', transform: getPlayerStyle(3).transform + ' translateY(-50%)', opacity: getPlayerStyle(3).opacity, transition: 'all 0.5s ease', zIndex: 1 }}>
+                            <div style={{ marginBottom: '5px', textAlign: 'right', fontWeight: 'bold' }}>{players[3]?.name}</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '-30px' }}>
+                                {players[3]?.hand.map((_, i) => (
+                                    <div key={i} style={{ width: '65px', height: '45px', background: '#333', borderRadius: '8px', border: '2px solid #555', boxShadow: '0 2px 4px rgba(0,0,0,0.3)', marginTop: i > 0 ? '-30px' : 0 }} />
+                                ))}
+                            </div>
                         </div>
-                    </div>
+                    )}
+
+                    {/* 3-Player Layout: Top Left and Top Right corners */}
+                    {players.length === 3 && (
+                        <>
+                            {/* Player 1: Top Left */}
+                            <div ref={el => playerRefs.current[1] = el} style={{ position: 'absolute', left: '40px', top: '80px', transform: getPlayerStyle(1).transform, opacity: getPlayerStyle(1).opacity, transition: 'all 0.5s ease', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                                <div style={{ marginBottom: '5px', fontWeight: 'bold' }}>{players[1]?.name}</div>
+                                <div style={{ display: 'flex', gap: '-20px' }}>
+                                    {players[1]?.hand.map((_, i) => (
+                                        <div key={i} style={{ width: '45px', height: '65px', background: '#333', borderRadius: '8px', border: '2px solid #555', boxShadow: '0 2px 4px rgba(0,0,0,0.3)', marginLeft: i > 0 ? '-20px' : 0 }} />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Player 2: Top Right */}
+                            <div ref={el => playerRefs.current[2] = el} style={{ position: 'absolute', right: '40px', top: '80px', transform: getPlayerStyle(2).transform, opacity: getPlayerStyle(2).opacity, transition: 'all 0.5s ease', zIndex: 1, display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                <div style={{ marginBottom: '5px', fontWeight: 'bold', textAlign: 'right' }}>{players[2]?.name}</div>
+                                <div style={{ display: 'flex', gap: '-20px', flexDirection: 'row-reverse' }}>
+                                    {players[2]?.hand.map((_, i) => (
+                                        <div key={i} style={{ width: '45px', height: '65px', background: '#333', borderRadius: '8px', border: '2px solid #555', boxShadow: '0 2px 4px rgba(0,0,0,0.3)', marginRight: i > 0 ? '-20px' : 0 }} />
+                                    ))}
+                                </div>
+                            </div>
+                        </>
+                    )}
 
                     <div style={{ display: 'flex', gap: '50px', alignItems: 'center', perspective: '1000px', zIndex: 5, transform: discardPilePop ? 'scale(1.1)' : 'scale(1)', transition: 'transform 0.1s ease-out' }}>
                         <div
@@ -622,46 +709,57 @@ const Uno = ({ onFinish, highScore }) => {
                     )}
 
                     <div style={{ ...getPlayerStyle(0), position: 'absolute', bottom: '20px', width: '100%', display: 'flex', gap: '-20px', flexWrap: 'nowrap', justifyContent: 'center', maxWidth: '90%', overflowX: 'auto', padding: '20px 0', zIndex: 10 }}>
-                        {players[0]?.hand.map((card, i) => (
-                            <div
-                                key={i}
-                                onClick={(e) => {
-                                    if (turn === 0) {
-                                        const cardEl = e.currentTarget;
-                                        const rect = cardEl.getBoundingClientRect();
+                        {players[0]?.hand.map((card, i) => {
+                            const isPlayable = turn === 0 && isValidMove(card);
+                            const isAnimating = animatingCard && animatingCard.playerIndex === 0 && animatingCard.cardIndex === i;
 
-                                        if (card.color === 'Black') {
-                                            // Set pending move to show modal
-                                            setPendingWildMove({ index: i, rect });
-                                        } else {
-                                            initiatePlayCard(0, i, null, rect);
+                            return (
+                                <div
+                                    key={i}
+                                    onClick={(e) => {
+                                        if (turn === 0 && isPlayable) {
+                                            const cardEl = e.currentTarget;
+                                            const rect = cardEl.getBoundingClientRect();
+
+                                            if (card.color === 'Black') {
+                                                setPendingWildMove({ index: i, rect });
+                                            } else {
+                                                initiatePlayCard(0, i, null, rect);
+                                            }
                                         }
-                                    }
-                                }}
-                                style={{
-                                    ...getCardStyle(card),
-                                    marginLeft: i > 0 ? '-30px' : 0,
-                                    zIndex: i,
-                                    opacity: (animatingCard && animatingCard.playerIndex === 0 && animatingCard.cardIndex === i) ? 0 : 1
-                                }}
-                                onMouseEnter={(e) => {
-                                    if (!animatingCard) {
-                                        e.currentTarget.style.transform = 'translateY(-20px) scale(1.1)';
-                                        e.currentTarget.style.zIndex = 100;
-                                        e.currentTarget.style.boxShadow = '0 10px 20px rgba(0,0,0,0.5)';
-                                    }
-                                }}
-                                onMouseLeave={(e) => {
-                                    if (!animatingCard) {
-                                        e.currentTarget.style.transform = 'translateY(0)';
-                                        e.currentTarget.style.zIndex = i;
-                                        e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.4)';
-                                    }
-                                }}
-                            >
-                                {renderCardContent(card)}
-                            </div>
-                        ))}
+                                    }}
+                                    style={{
+                                        ...getCardStyle(card),
+                                        marginLeft: i > 0 ? '-30px' : 0,
+                                        zIndex: i,
+                                        opacity: isAnimating ? 0 : 1, // Always fully visible
+                                        filter: 'none', // No grayscale
+                                        cursor: isPlayable ? 'pointer' : 'default',
+                                        pointerEvents: isAnimating ? 'none' : 'auto',
+                                        // Highlight Playable Cards
+                                        boxShadow: isPlayable ? '0 0 15px rgba(255, 215, 0, 0.8), 0 4px 8px rgba(0,0,0,0.4)' : '0 4px 8px rgba(0,0,0,0.4)',
+                                        border: isPlayable ? '3px solid #FFD700' : getCardStyle(card).border,
+                                        transform: isPlayable ? 'translateY(-10px)' : 'none'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        if (!animatingCard && isPlayable) {
+                                            e.currentTarget.style.transform = 'translateY(-20px) scale(1.1)';
+                                            e.currentTarget.style.zIndex = 100;
+                                            e.currentTarget.style.boxShadow = '0 10px 20px rgba(0,0,0,0.5)';
+                                        }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        if (!animatingCard) {
+                                            e.currentTarget.style.transform = 'translateY(0)';
+                                            e.currentTarget.style.zIndex = i;
+                                            e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.4)';
+                                        }
+                                    }}
+                                >
+                                    {renderCardContent(card)}
+                                </div>
+                            );
+                        })}
                     </div>
                 </>
             )}
@@ -671,7 +769,11 @@ const Uno = ({ onFinish, highScore }) => {
                     <h1 style={{ fontSize: '80px', margin: 0 }}>{winner.id === 0 ? '🏆' : '💀'}</h1>
                     <h1 style={{ fontSize: '60px', color: winner.id === 0 ? '#4CAF50' : '#f44336', textShadow: '0 0 20px currentColor' }}>{winner.id === 0 ? 'You Won!' : 'Game Over'}</h1>
                     <h2 style={{ color: 'white', marginTop: 0 }}>{winner.name} finished first!</h2>
-                    <button onClick={startGame} style={{ padding: '20px 50px', fontSize: '24px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '10px', marginTop: '20px', cursor: 'pointer', boxShadow: '0 4px 10px rgba(33, 150, 243, 0.4)' }}>Play Again</button>
+
+                    <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
+                        <button onClick={() => setWinner(null)} style={{ padding: '15px 40px', fontSize: '18px', background: '#555', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>Main Menu</button>
+                        <button onClick={() => startGame(players.length)} style={{ padding: '15px 40px', fontSize: '18px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', boxShadow: '0 4px 10px rgba(33, 150, 243, 0.4)' }}>Play Again</button>
+                    </div>
                     <button onClick={() => onFinish(null)} style={{ marginTop: '20px', background: 'transparent', color: '#aaa', border: 'none', fontSize: '18px', cursor: 'pointer' }}>Back to Menu</button>
                     {winner.id === 0 && <div style={{ marginTop: '20px', color: '#FFD700' }}>Bonus Points: +200 XP</div>}
                 </div>
