@@ -85,10 +85,18 @@ Planned game additions to expand the library and engagement.
 
 | Game | Description | Complexity | Status |
 |------|-------------|------------|--------|
-| **Solitaire** | Classic card patience game | ⭐⭐ Medium | Planned |
+| **Solitaire** | Classic card patience game | ⭐⭐ Medium | ✅ Done |
 | **Blackjack** | Beat the dealer to 21 | ⭐ Easy | ✅ Done |
 
 ### Quick Arcade Games
+
+| Game | Description | Complexity | Status |
+|------|-------------|------------|--------|
+| **Whack-a-Mole** | Whack the moles! | ⭐ Easy | ✅ Done |
+| **Minesweeper** | Avoid the mines | ⭐⭐ Medium | ✅ Done |
+| **Reversi/Othello** | Territory strategy | ⭐⭐⭐ Hard | ✅ Done |
+| **Battleship** | Naval warfare | ⭐⭐⭐ Hard | ✅ Done |
+| **Flappy Bird** | Navigate the pipes | ⭐ Easy | ✅ Done |
 
 | Game | Description | Complexity | Status |
 |------|-------------|------------|--------|

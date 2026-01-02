@@ -36,6 +36,12 @@ public class GameService {
         seedGame("Connect Four", "Drop discs to connect 4 in a row. Challenge friends or AI!", "connectfour");
         seedGame("Sudoku", "Fill the 9x9 grid so every row, column, and box contains 1-9!", "sudoku");
         seedGame("Blackjack", "Beat the dealer to 21! Classic casino card game.", "blackjack");
+        seedGame("Solitaire", "Classic Klondike patience card game.", "solitaire");
+        seedGame("Whack-a-Mole", "Whack the moles as they pop up! Fast-paced arcade fun.", "whackamole");
+        seedGame("Minesweeper", "Reveal squares without hitting mines. Classic puzzle!", "minesweeper");
+        seedGame("Reversi", "Flip your opponent's pieces to dominate the board!", "reversi");
+        seedGame("Battleship", "Sink the enemy fleet! Place ships and fire away.", "battleship");
+        seedGame("Flappy Bird", "Tap to fly through the pipes. How far can you go?", "flappybird");
     }
 
     private void seedGame(String name, String description, String type) {

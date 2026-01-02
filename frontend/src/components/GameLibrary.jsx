@@ -19,7 +19,13 @@ export default function GameLibrary({ onSelectGame }) {
         'tetris': '/games/tetris.png',
         'connectfour': '/games/connectfour.png',
         'sudoku': '/games/sudoku.png',
-        'blackjack': '/games/blackjack.png'
+        'blackjack': '/games/blackjack.png',
+        'solitaire': '/games/solitaire.png',
+        'whackamole': '/games/whackamole.png',
+        'minesweeper': '/games/minesweeper.png',
+        'reversi': '/games/reversi.png',
+        'battleship': '/games/battleship.png',
+        'flappybird': '/games/flappybird.png'
     };
 
     useEffect(() => {

@@ -25,6 +25,12 @@ import Tetris from './components/Tetris';
 import ConnectFour from './components/ConnectFour';
 import Sudoku from './components/Sudoku';
 import Blackjack from './components/Blackjack';
+import Solitaire from './components/Solitaire';
+import WhackAMole from './components/WhackAMole';
+import Minesweeper from './components/Minesweeper';
+import Reversi from './components/Reversi';
+import Battleship from './components/Battleship';
+import FlappyBird from './components/FlappyBird';
 import OnlinePanel from './components/OnlinePanel';
 
 
@@ -184,6 +190,18 @@ function App() {
         return <Sudoku onFinish={handleGameFinish} highScore={getHighScore('sudoku')} />;
       case 'game-blackjack':
         return <Blackjack onFinish={handleGameFinish} highScore={getHighScore('blackjack')} />;
+      case 'game-solitaire':
+        return <Solitaire onFinish={handleGameFinish} highScore={getHighScore('solitaire')} />;
+      case 'game-whackamole':
+        return <WhackAMole onFinish={handleGameFinish} highScore={getHighScore('whackamole')} />;
+      case 'game-minesweeper':
+        return <Minesweeper onFinish={handleGameFinish} highScore={getHighScore('minesweeper')} />;
+      case 'game-reversi':
+        return <Reversi onFinish={handleGameFinish} highScore={getHighScore('reversi')} />;
+      case 'game-battleship':
+        return <Battleship onFinish={handleGameFinish} highScore={getHighScore('battleship')} />;
+      case 'game-flappybird':
+        return <FlappyBird onFinish={handleGameFinish} highScore={getHighScore('flappybird')} />;
       default:
         return <GameLibrary onSelectGame={(type) => setView(`game-${type}`)} />;
     }
