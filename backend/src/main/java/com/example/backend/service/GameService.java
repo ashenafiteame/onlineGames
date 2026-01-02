@@ -35,6 +35,7 @@ public class GameService {
         seedGame("Tetris", "Classic falling blocks puzzle game. Clear lines to score!", "tetris");
         seedGame("Connect Four", "Drop discs to connect 4 in a row. Challenge friends or AI!", "connectfour");
         seedGame("Sudoku", "Fill the 9x9 grid so every row, column, and box contains 1-9!", "sudoku");
+        seedGame("Blackjack", "Beat the dealer to 21! Classic casino card game.", "blackjack");
     }
 
     private void seedGame(String name, String description, String type) {

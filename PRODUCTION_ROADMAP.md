@@ -86,7 +86,7 @@ Planned game additions to expand the library and engagement.
 | Game | Description | Complexity | Status |
 |------|-------------|------------|--------|
 | **Solitaire** | Classic card patience game | ⭐⭐ Medium | Planned |
-| **Blackjack** | Beat the dealer to 21 | ⭐ Easy | Planned |
+| **Blackjack** | Beat the dealer to 21 | ⭐ Easy | ✅ Done |
 
 ### Quick Arcade Games
 

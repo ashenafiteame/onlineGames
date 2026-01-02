@@ -24,6 +24,7 @@ import Game2048 from './components/Game2048';
 import Tetris from './components/Tetris';
 import ConnectFour from './components/ConnectFour';
 import Sudoku from './components/Sudoku';
+import Blackjack from './components/Blackjack';
 import OnlinePanel from './components/OnlinePanel';
 
 
@@ -181,6 +182,8 @@ function App() {
         />;
       case 'game-sudoku':
         return <Sudoku onFinish={handleGameFinish} highScore={getHighScore('sudoku')} />;
+      case 'game-blackjack':
+        return <Blackjack onFinish={handleGameFinish} highScore={getHighScore('blackjack')} />;
       default:
         return <GameLibrary onSelectGame={(type) => setView(`game-${type}`)} />;
     }
