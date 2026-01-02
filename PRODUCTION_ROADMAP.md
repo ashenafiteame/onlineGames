@@ -67,37 +67,23 @@ Planned game additions to expand the library and engagement.
 
 | Game | Description | Complexity | Status |
 |------|-------------|------------|--------|
-| **Tic-Tac-Toe** | Classic 3x3 grid, quick matches | ⭐ Easy | ✅ Done |
-| **Connect Four** | Drop discs to connect 4 in a row | ⭐ Easy | ✅ Done |
-| **Battleship** | Place ships, sink enemy fleet (AI) | ⭐⭐ Medium | ✅ Done |
-| **Reversi/Othello** | Territory strategy (AI) | ⭐⭐ Medium | ✅ Done |
+| **Poker** | Texas Hold'em (Multiplayer) | ⭐⭐⭐ Hard | Planned |
 
 ### Solo Puzzle Games
 
 | Game | Description | Complexity | Status |
 |------|-------------|------------|--------|
-| **2048** | Slide tiles to combine numbers | ⭐ Easy | ✅ Done |
-| **Sudoku** | Fill 9x9 grid with numbers | ⭐⭐ Medium | ✅ Done |
-| **Minesweeper** | Reveal squares, avoid mines | ⭐ Easy | ✅ Done |
-| **Tetris** | Classic falling blocks | ⭐⭐ Medium | ✅ Done |
+| **Crossword** | Daily generated crosswords | ⭐⭐⭐ Hard | Planned |
 
 ### Card Games
 
 | Game | Description | Complexity | Status |
 |------|-------------|------------|--------|
-| **Solitaire** | Classic card patience game | ⭐⭐ Medium | ✅ Done |
-| **Blackjack** | Beat the dealer to 21 | ⭐ Easy | ✅ Done |
+| **Uno Clone** | Color matching card game | ⭐⭐ Medium | Planned |
 
 ### Quick Arcade Games
 
 | Game | Description | Complexity | Status |
 |------|-------------|------------|--------|
-| **Whack-a-Mole** | Whack the moles! | ⭐ Easy | ✅ Done |
-| **Flappy Bird** | Navigate the pipes | ⭐ Easy | ✅ Done |
-| **Brick Breaker** | Bounce ball to break bricks | ⭐⭐ Medium | ✅ Done |
-
-### Priority Recommendations
-
-1. ~~**Connect Four** - Easy to implement, uses multiplayer system, very popular~~ ✅ Done
-2. ~~**2048** - Highly addictive, solo play, great for mobile~~ ✅ Done
-3. ~~**Tic-Tac-Toe** - Super quick to build, perfect multiplayer starter~~ ✅ Done
+| **Pacman Clone** | Maze chaser | ⭐⭐⭐ Hard | Planned |
+| **Space Invaders** | Shooter classic | ⭐⭐ Medium | Planned |

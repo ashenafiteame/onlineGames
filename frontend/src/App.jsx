@@ -25,6 +25,7 @@ import Tetris from './components/Tetris';
 import ConnectFour from './components/ConnectFour';
 import Sudoku from './components/Sudoku';
 import Blackjack from './components/Blackjack';
+import Uno from './components/Uno';
 import Solitaire from './components/Solitaire';
 import WhackAMole from './components/WhackAMole';
 import Minesweeper from './components/Minesweeper';
@@ -192,6 +193,8 @@ function App() {
         return <Sudoku onFinish={handleGameFinish} highScore={getHighScore('sudoku')} />;
       case 'game-blackjack':
         return <Blackjack onFinish={handleGameFinish} highScore={getHighScore('blackjack')} />;
+      case 'game-uno':
+        return <Uno onFinish={handleGameFinish} highScore={getHighScore('uno')} />;
       case 'game-solitaire':
         return <Solitaire onFinish={handleGameFinish} highScore={getHighScore('solitaire')} />;
       case 'game-whackamole':

@@ -20,6 +20,7 @@ export default function GameLibrary({ onSelectGame }) {
         'connectfour': '/games/connectfour.png',
         'sudoku': '/games/sudoku.png',
         'blackjack': '/games/blackjack.png',
+        'uno': '/games/uno.png',
         'solitaire': '/games/solitaire.png',
         'whackamole': '/games/whackamole.png',
         'minesweeper': '/games/minesweeper.png',
