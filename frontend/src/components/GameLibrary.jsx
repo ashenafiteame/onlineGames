@@ -78,13 +78,57 @@ export default function GameLibrary({ onSelectGame }) {
             )}
             <div className="product-grid">
                 {sortedGames.map(game => (
-                    <div key={game.id} className="card" onClick={() => onSelectGame(game.type)} style={{ cursor: 'pointer', overflow: 'hidden', padding: 0 }}>
-                        <div className="game-card-img" style={{ backgroundImage: `url(${gameImages[game.type]})` }}></div>
+                    <div key={game.id} className="card" style={{ cursor: 'pointer', overflow: 'hidden', padding: 0 }}>
+                        <div className="game-card-img" style={{ backgroundImage: `url(${gameImages[game.type]})` }} onClick={() => onSelectGame(game.type)}></div>
                         <div style={{ padding: '1.5rem' }}>
                             <h3 style={{ marginTop: 0 }}>{game.name}</h3>
                             <p>{game.description}</p>
                             <div className="badge">High Score: {getHighScore(game.id)}</div>
-                            <div style={{ marginTop: '1rem', color: 'var(--primary)', fontWeight: 'bold' }}>Play Now →</div>
+
+                            {/* Special UNO buttons */}
+                            {game.type === 'uno' ? (
+                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                                    <button
+                                        onClick={() => onSelectGame('uno')}
+                                        style={{
+                                            flex: 1,
+                                            padding: '8px 12px',
+                                            background: 'var(--primary)',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontWeight: 'bold',
+                                            fontSize: '0.85rem'
+                                        }}
+                                    >
+                                        🎮 Solo
+                                    </button>
+                                    <button
+                                        onClick={() => onSelectGame('uno-lobby')}
+                                        style={{
+                                            flex: 1,
+                                            padding: '8px 12px',
+                                            background: 'linear-gradient(135deg, #e53935, #ff6b6b)',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontWeight: 'bold',
+                                            fontSize: '0.85rem'
+                                        }}
+                                    >
+                                        🌐 Online
+                                    </button>
+                                </div>
+                            ) : (
+                                <div
+                                    onClick={() => onSelectGame(game.type)}
+                                    style={{ marginTop: '1rem', color: 'var(--primary)', fontWeight: 'bold' }}
+                                >
+                                    Play Now →
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}

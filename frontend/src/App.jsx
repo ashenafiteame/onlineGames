@@ -35,6 +35,8 @@ import Battleship from './components/Battleship';
 import FlappyBird from './components/FlappyBird';
 import BrickBreaker from './components/BrickBreaker';
 import OnlinePanel from './components/OnlinePanel';
+import UnoLobby from './components/UnoLobby';
+import UnoMultiplayer from './components/UnoMultiplayer';
 
 
 function App() {
@@ -46,6 +48,26 @@ function App() {
   const [achievements, setAchievements] = useState([]);
   const [showMenu, setShowMenu] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
+  const [unoRoom, setUnoRoom] = useState(null);
+  const [unoInviteCode, setUnoInviteCode] = useState(null);
+
+  // Check URL for UNO invite code on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const inviteCode = params.get('uno');
+    if (inviteCode) {
+      setUnoInviteCode(inviteCode);
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  // Auto-navigate to UNO lobby if invite code present and user logged in
+  useEffect(() => {
+    if (unoInviteCode && user && view === 'library') {
+      setView('game-uno-lobby');
+    }
+  }, [unoInviteCode, user, view]);
 
 
 
@@ -201,6 +223,27 @@ function App() {
         return <Blackjack onFinish={handleGameFinish} highScore={getHighScore('blackjack')} />;
       case 'game-uno':
         return <Uno onFinish={handleGameFinish} highScore={getHighScore('uno')} />;
+      case 'game-uno-lobby':
+        return <UnoLobby
+          initialInviteCode={unoInviteCode}
+          onBack={() => {
+            setUnoInviteCode(null);
+            setView('library');
+          }}
+          onStartGame={(room) => {
+            setUnoRoom(room);
+            setUnoInviteCode(null);
+            setView('game-uno-multiplayer');
+          }}
+        />;
+      case 'game-uno-multiplayer':
+        return <UnoMultiplayer
+          room={unoRoom}
+          onFinish={() => {
+            setUnoRoom(null);
+            handleGameFinish(null);
+          }}
+        />;
       case 'game-solitaire':
         return <Solitaire onFinish={handleGameFinish} highScore={getHighScore('solitaire')} />;
       case 'game-whackamole':

@@ -36,7 +36,7 @@ public class GameService {
         seedGame("Connect Four", "Drop discs to connect 4 in a row. Challenge friends or AI!", "connectfour");
         seedGame("Sudoku", "Fill the 9x9 grid so every row, column, and box contains 1-9!", "sudoku");
         seedGame("Blackjack", "Beat the dealer to 21! Classic casino card game.", "blackjack");
-        seedGame("Uno", "Classic card game against 3 bots! Match colors and numbers.", "uno");
+        seedGame("Uno", "Classic card game, Matching colors and numbers.", "uno");
         seedGame("Solitaire", "Classic Klondike patience card game.", "solitaire");
         seedGame("Whack-a-Mole", "Whack the moles as they pop up! Fast-paced arcade fun.", "whackamole");
         seedGame("Minesweeper", "Reveal squares without hitting mines. Classic puzzle!", "minesweeper");
