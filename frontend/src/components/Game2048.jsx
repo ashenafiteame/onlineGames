@@ -7,6 +7,7 @@ const Game2048 = ({ onFinish, highScore }) => {
     const [localHighScore, setLocalHighScore] = useState(highScore || 0);
     const [gameOver, setGameOver] = useState(false);
     const [won, setWon] = useState(false);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
 
     useEffect(() => {
         if (highScore > localHighScore) setLocalHighScore(highScore);
@@ -24,6 +25,7 @@ const Game2048 = ({ onFinish, highScore }) => {
         setScore(0);
         setGameOver(false);
         setWon(false);
+        setLastUpdatedUser(null);
     };
 
     useEffect(() => {
@@ -60,7 +62,7 @@ const Game2048 = ({ onFinish, highScore }) => {
                 newScore += row[i];
                 if (row[i] === 2048 && !won) {
                     setWon(true);
-                    GameService.submitScore('2048', newScore);
+                    GameService.submitScore('2048', newScore).then(user => setLastUpdatedUser(user));
                     if (newScore > localHighScore) setLocalHighScore(newScore);
                 }
             }
@@ -129,7 +131,7 @@ const Game2048 = ({ onFinish, highScore }) => {
             }
         }
         setGameOver(true);
-        GameService.submitScore('2048', currentScore);
+        GameService.submitScore('2048', currentScore).then(user => setLastUpdatedUser(user));
         if (currentScore > localHighScore) setLocalHighScore(currentScore);
     };
 
@@ -174,8 +176,28 @@ const Game2048 = ({ onFinish, highScore }) => {
     return (
         <div style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            height: '100vh', background: '#faf8ef', fontFamily: 'sans-serif', color: '#776e65'
+            background: '#faf8ef', fontFamily: 'sans-serif', color: '#776e65',
+            position: 'relative', padding: '20px'
         }}>
+            <button
+                onClick={() => onFinish(null)}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+            >
+                Exit
+            </button>
             <div style={{ display: 'flex', justifyContent: 'space-between', width: '500px', marginBottom: '20px', alignItems: 'center' }}>
                 <h1 style={{ fontSize: '60px', margin: 0, fontWeight: 'bold' }}>2048</h1>
                 <div style={{ display: 'flex', gap: '10px' }}>
@@ -232,10 +254,10 @@ const Game2048 = ({ onFinish, highScore }) => {
                             Try Again
                         </button>
                         <button
-                            onClick={() => onFinish({ score: score })} // Or just go back
+                            onClick={() => onFinish(lastUpdatedUser)}
                             style={{ background: '#776e65', color: '#f9f6f2', border: 'none', borderRadius: '3px', padding: '10px 20px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}
                         >
-                            Menu
+                            Back to Library
                         </button>
                     </div>
                 )}

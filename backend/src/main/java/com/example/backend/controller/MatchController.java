@@ -41,7 +41,7 @@ public class MatchController {
     }
 
     @PostMapping("/{matchId}/accept")
-    public ResponseEntity<?> accept(@PathVariable Long matchId, Authentication auth) {
+    public ResponseEntity<?> accept(@PathVariable @org.springframework.lang.NonNull Long matchId, Authentication auth) {
         User user = userService.findByUsername(auth.getName()).get();
         try {
             return ResponseEntity.ok(matchService.acceptMatch(matchId, user));
@@ -51,7 +51,7 @@ public class MatchController {
     }
 
     @PostMapping("/{matchId}/move")
-    public ResponseEntity<?> move(@PathVariable Long matchId,
+    public ResponseEntity<?> move(@PathVariable @org.springframework.lang.NonNull Long matchId,
             @jakarta.validation.Valid @RequestBody com.example.backend.dto.MoveRequest request,
             Authentication auth) {
         User user = userService.findByUsername(auth.getName()).get();
@@ -64,20 +64,21 @@ public class MatchController {
     }
 
     @GetMapping("/{matchId}")
-    public ResponseEntity<?> getMatch(@PathVariable Long matchId) {
+    public ResponseEntity<?> getMatch(@PathVariable @org.springframework.lang.NonNull Long matchId) {
         return matchService.getMatch(matchId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/{matchId}/finish")
-    public ResponseEntity<?> finish(@PathVariable Long matchId,
+    public ResponseEntity<?> finish(@PathVariable @org.springframework.lang.NonNull Long matchId,
             @RequestBody com.example.backend.dto.FinishMatchRequest request) {
         return ResponseEntity.ok(matchService.finishMatch(matchId, request.getStatus()));
     }
 
     @PostMapping("/{matchId}/decline")
-    public ResponseEntity<?> decline(@PathVariable Long matchId, Authentication auth) {
+    public ResponseEntity<?> decline(@PathVariable @org.springframework.lang.NonNull Long matchId,
+            Authentication auth) {
         User user = userService.findByUsername(auth.getName()).get();
         try {
             return ResponseEntity.ok(matchService.declineMatch(matchId, user));
@@ -87,7 +88,8 @@ public class MatchController {
     }
 
     @PostMapping("/{matchId}/forfeit")
-    public ResponseEntity<?> forfeit(@PathVariable Long matchId, Authentication auth) {
+    public ResponseEntity<?> forfeit(@PathVariable @org.springframework.lang.NonNull Long matchId,
+            Authentication auth) {
         User user = userService.findByUsername(auth.getName()).get();
         try {
             return ResponseEntity.ok(matchService.forfeitMatch(matchId, user));

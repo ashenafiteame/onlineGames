@@ -154,6 +154,7 @@ const Uno = ({ onFinish, highScore }) => {
     const [message, setMessage] = useState('');
     const [winner, setWinner] = useState(null);
     const [localHighScore, setLocalHighScore] = useState(highScore || 0);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
     const [showRules, setShowRules] = useState(false);
 
     // Wild Card Picker State
@@ -205,6 +206,7 @@ const Uno = ({ onFinish, highScore }) => {
         setTurn(0);
         setDirection(1);
         setWinner(null);
+        setLastUpdatedUser(null);
         setMessage("Your Turn!");
         setGameStarted(true);
         setAnimatingCard(null);
@@ -335,10 +337,11 @@ const Uno = ({ onFinish, highScore }) => {
             setGameStarted(false);
             if (!player.isBot) {
                 const score = players.reduce((acc, p) => acc + p.hand.reduce((sum, c) => sum + (c.type === 'number' ? c.value : 20), 0), 0) + 100;
-                GameService.submitScore('uno', score);
+                GameService.submitScore('uno', score).then(user => setLastUpdatedUser(user));
                 if (score > localHighScore) setLocalHighScore(score);
                 setMessage(`🎉 You Win! Score: ${score}`);
             } else {
+                GameService.submitScore('uno', 50).then(user => setLastUpdatedUser(user));
                 setMessage(`${player.name} Wins!`);
             }
             return;
@@ -490,7 +493,7 @@ const Uno = ({ onFinish, highScore }) => {
             <div style={{ position: 'absolute', top: '20px', left: '20px', display: 'flex', gap: '10px', zIndex: 100 }}>
                 <button
                     onClick={() => onFinish(null)}
-                    style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', padding: '10px 20px', borderRadius: '20px', cursor: 'pointer', backdropFilter: 'blur(5px)' }}
+                    style={{ background: '#333', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}
                 >
                     Exit
                 </button>
@@ -765,17 +768,24 @@ const Uno = ({ onFinish, highScore }) => {
             )}
 
             {winner && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.9)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 200 }}>
-                    <h1 style={{ fontSize: '80px', margin: 0 }}>{winner.id === 0 ? '🏆' : '💀'}</h1>
-                    <h1 style={{ fontSize: '60px', color: winner.id === 0 ? '#4CAF50' : '#f44336', textShadow: '0 0 20px currentColor' }}>{winner.id === 0 ? 'You Won!' : 'Game Over'}</h1>
-                    <h2 style={{ color: 'white', marginTop: 0 }}>{winner.name} finished first!</h2>
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.95)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
+                    <div style={{
+                        background: 'rgba(0,0,0,0.85)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
+                        textAlign: 'center', minWidth: '300px', boxShadow: '0 0 50px rgba(0,0,0,0.7)'
+                    }}>
+                        <h1 style={{ fontSize: '80px', margin: '0 0 10px 0' }}>{winner.id === 0 ? '🏆' : '💀'}</h1>
+                        <h2 style={{ color: winner.id === 0 ? '#42d392' : '#ff6b6b', marginTop: 0, fontSize: '36px' }}>
+                            {winner.id === 0 ? 'VICTORY! 🎉' : 'GAME OVER'}
+                        </h2>
+                        <p style={{ color: 'white', fontSize: '1.2rem', marginBottom: '20px' }}>
+                            {winner.id === 0 ? "You finished first!" : `${winner.name} finished first!`}
+                        </p>
 
-                    <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
-                        <button onClick={() => setWinner(null)} style={{ padding: '15px 40px', fontSize: '18px', background: '#555', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer' }}>Main Menu</button>
-                        <button onClick={() => startGame(players.length)} style={{ padding: '15px 40px', fontSize: '18px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', boxShadow: '0 4px 10px rgba(33, 150, 243, 0.4)' }}>Play Again</button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                            <button onClick={() => startGame(players.length)} style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Play Again</button>
+                            <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#555', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Back to Library</button>
+                        </div>
                     </div>
-                    <button onClick={() => onFinish(null)} style={{ marginTop: '20px', background: 'transparent', color: '#aaa', border: 'none', fontSize: '18px', cursor: 'pointer' }}>Back to Menu</button>
-                    {winner.id === 0 && <div style={{ marginTop: '20px', color: '#FFD700' }}>Bonus Points: +200 XP</div>}
                 </div>
             )}
         </div>

@@ -51,7 +51,7 @@ public class MatchService {
     }
 
     @Transactional
-    public GameMatch acceptMatch(Long matchId, User user) {
+    public GameMatch acceptMatch(@org.springframework.lang.NonNull Long matchId, User user) {
         GameMatch match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new RuntimeException("Match not found"));
 
@@ -69,7 +69,7 @@ public class MatchService {
     }
 
     @Transactional
-    public GameMatch declineMatch(Long matchId, User user) {
+    public GameMatch declineMatch(@org.springframework.lang.NonNull Long matchId, User user) {
         GameMatch match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new RuntimeException("Match not found"));
 
@@ -87,7 +87,7 @@ public class MatchService {
     }
 
     @Transactional
-    public GameMatch forfeitMatch(Long matchId, User user) {
+    public GameMatch forfeitMatch(@org.springframework.lang.NonNull Long matchId, User user) {
         GameMatch match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new RuntimeException("Match not found"));
 
@@ -112,7 +112,8 @@ public class MatchService {
     }
 
     @Transactional
-    public GameMatch updateMove(Long matchId, String boardData, String nextTurn, User user) {
+    public GameMatch updateMove(@org.springframework.lang.NonNull Long matchId, String boardData, String nextTurn,
+            User user) {
         GameMatch match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new RuntimeException("Match not found"));
 
@@ -132,7 +133,7 @@ public class MatchService {
     }
 
     @Transactional
-    public GameMatch finishMatch(Long matchId, String status) {
+    public GameMatch finishMatch(@org.springframework.lang.NonNull Long matchId, String status) {
         GameMatch match = matchRepository.findById(matchId)
                 .orElseThrow(() -> new RuntimeException("Match not found"));
         match.setStatus(status); // FINISHED
@@ -143,7 +144,7 @@ public class MatchService {
         return matchRepository.findAllActiveByUser(user);
     }
 
-    public Optional<GameMatch> getMatch(Long id) {
+    public Optional<GameMatch> getMatch(@org.springframework.lang.NonNull Long id) {
         return matchRepository.findById(id);
     }
 }

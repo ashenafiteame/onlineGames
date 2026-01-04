@@ -17,6 +17,7 @@ const Reversi = ({ onFinish, highScore }) => {
     const [gameOver, setGameOver] = useState(false);
     const [message, setMessage] = useState('Your turn (Black)');
     const [localHighScore, setLocalHighScore] = useState(highScore || 0);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
 
     const directions = [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]];
 
@@ -136,16 +137,19 @@ const Reversi = ({ onFinish, highScore }) => {
     const endGame = (b) => {
         setGameOver(true);
         const { black, white } = countPieces(b);
+        let score = 50;
         if (black > white) {
             setMessage(`You win! ${black}-${white}`);
-            const score = black * 10;
-            GameService.submitScore('reversi', score);
+            score = black * 10;
             if (score > localHighScore) setLocalHighScore(score);
         } else if (white > black) {
             setMessage(`AI wins! ${white}-${black}`);
+            score = 25;
         } else {
             setMessage(`Tie! ${black}-${white}`);
+            score = 35;
         }
+        GameService.submitScore('reversi', score).then(user => setLastUpdatedUser(user));
     };
 
     const restart = () => {
@@ -153,13 +157,33 @@ const Reversi = ({ onFinish, highScore }) => {
         setCurrentPlayer(BLACK);
         setGameOver(false);
         setMessage('Your turn (Black)');
+        setLastUpdatedUser(null);
     };
 
     const validMoves = currentPlayer === BLACK ? getValidMoves(board, BLACK) : [];
     const { black, white } = countPieces(board);
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh', background: 'linear-gradient(135deg, #1a472a 0%, #0d5c36 100%)', color: 'white', padding: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'linear-gradient(135deg, #1a472a 0%, #0d5c36 100%)', color: 'white', padding: '20px', position: 'relative' }}>
+            <button
+                onClick={() => onFinish(null)}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+            >
+                Exit
+            </button>
             <h1 style={{ fontSize: '42px', margin: '0 0 15px 0' }}>⚫ Reversi / Othello</h1>
             <div style={{ display: 'flex', gap: '30px', marginBottom: '15px', fontSize: '18px' }}>
                 <div>⚫ {black}</div><div>⚪ {white}</div><div>🏆 Best: {localHighScore}</div>
@@ -184,8 +208,26 @@ const Reversi = ({ onFinish, highScore }) => {
                     );
                 }))}
             </div>
-            <button onClick={restart} style={{ marginTop: '20px', padding: '12px 30px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', fontSize: '18px', cursor: 'pointer' }}>New Game</button>
-            <button onClick={() => onFinish(null)} style={{ marginTop: '15px', background: '#666', color: 'white', border: 'none', padding: '12px 30px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer' }}>Menu</button>
+            {/* Removed Bottom Buttons */}
+
+            {gameOver && (
+                <div style={{
+                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    background: 'rgba(0,0,0,0.95)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
+                    textAlign: 'center', minWidth: '300px', zIndex: 1000, boxShadow: '0 0 50px rgba(0,0,0,0.7)'
+                }}>
+                    <h2 style={{ color: black > white ? '#42d392' : black === white ? '#ffd700' : '#ff6b6b', marginTop: 0 }}>
+                        {black > white ? "VICTORY! 🎉" : black === white ? "TIE! 🤝" : "DEFEAT! 💥"}
+                    </h2>
+                    <p style={{ fontSize: '1.2rem', margin: '1rem 0', color: 'white' }}>
+                        {black > white ? `You won ${black}-${white}!` : black === white ? "It's a draw!" : `AI won ${white}-${black}!`}
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <button onClick={restart} style={{ padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px' }}>Play Again</button>
+                        <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#555', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Back to Library</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

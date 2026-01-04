@@ -8,6 +8,8 @@ export default function MemoryMatch({ onFinish, highScore }) {
     const [flipped, setFlipped] = useState([]);
     const [matched, setMatched] = useState([]);
     const [moves, setMoves] = useState(0);
+    const [gameOver, setGameOver] = useState(false);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
 
     useEffect(() => {
         shuffleCards();
@@ -21,6 +23,8 @@ export default function MemoryMatch({ onFinish, highScore }) {
         setFlipped([]);
         setMatched([]);
         setMoves(0);
+        setGameOver(false);
+        setLastUpdatedUser(null);
     };
 
     const handleCardClick = (index) => {
@@ -42,17 +46,36 @@ export default function MemoryMatch({ onFinish, highScore }) {
     };
 
     useEffect(() => {
-        if (matched.length === cards.length && cards.length > 0) {
+        if (matched.length === cards.length && cards.length > 0 && !gameOver) {
+            setGameOver(true);
             const score = Math.max(100 - moves * 5, 10);
             GameService.submitScore('memory', score).then((user) => {
-                alert(`You won in ${moves} moves! Score: ${score}`);
-                onFinish(user);
+                setLastUpdatedUser(user);
             });
         }
-    }, [matched]);
+    }, [matched, gameOver, cards.length, moves]);
 
     return (
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', position: 'relative' }}>
+            <button
+                onClick={() => onFinish(null)}
+                style={{
+                    position: 'absolute',
+                    top: '10px',
+                    left: '10px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+            >
+                Exit
+            </button>
             <h2>🧠 Memory Match</h2>
             <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '1rem' }}>
                 Flip cards to find matching pairs. Find all pairs to win!
@@ -84,7 +107,22 @@ export default function MemoryMatch({ onFinish, highScore }) {
                 ))}
             </div>
             <button onClick={shuffleCards} style={{ marginTop: '20px' }}>Restart</button>
-            <button onClick={() => onFinish(null)} style={{ marginTop: '20px', marginLeft: '10px', background: '#555' }}>Back</button>
+            {/* Removed bottom button */}
+
+            {gameOver && (
+                <div style={{
+                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    background: 'rgba(0,0,0,0.85)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
+                    textAlign: 'center', minWidth: '200px', zIndex: 1000
+                }}>
+                    <h2 style={{ color: '#4CAF50', marginTop: 0 }}>You Won!</h2>
+                    <p style={{ fontSize: '1.2rem', margin: '1rem 0' }}>Moves: {moves}</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <button onClick={shuffleCards} style={{ padding: '10px 20px', fontSize: '1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px' }}>Play Again</button>
+                        <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '10px 20px', fontSize: '1rem', background: '#555', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Back to Library</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

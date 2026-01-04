@@ -14,6 +14,7 @@ const Minesweeper = ({ onFinish, highScore }) => {
     const [timer, setTimer] = useState(0);
     const [started, setStarted] = useState(false);
     const [localHighScore, setLocalHighScore] = useState(highScore || 0);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
 
     useEffect(() => {
         if (highScore > localHighScore) setLocalHighScore(highScore);
@@ -50,6 +51,7 @@ const Minesweeper = ({ onFinish, highScore }) => {
         setWon(false);
         setTimer(0);
         setStarted(false);
+        setLastUpdatedUser(null);
     }, []);
 
     useEffect(() => { initBoard(); }, [initBoard]);
@@ -83,6 +85,7 @@ const Minesweeper = ({ onFinish, highScore }) => {
         if (board[r][c] === -1) {
             setGameOver(true);
             setRevealed(Array(ROWS).fill(null).map(() => Array(COLS).fill(true)));
+            GameService.submitScore('minesweeper', 50).then(user => setLastUpdatedUser(user));
         } else {
             const newRev = revealCell(r, c, revealed);
             setRevealed(newRev);
@@ -106,7 +109,7 @@ const Minesweeper = ({ onFinish, highScore }) => {
         }
         setWon(true);
         const score = Math.max(10, 500 - timer * 2);
-        GameService.submitScore('minesweeper', score);
+        GameService.submitScore('minesweeper', score).then(user => setLastUpdatedUser(user));
         if (score > localHighScore) setLocalHighScore(score);
     };
 
@@ -122,20 +125,36 @@ const Minesweeper = ({ onFinish, highScore }) => {
 
     return (
         <div style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh',
-            background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', color: 'white', padding: '20px'
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)', color: 'white', padding: '20px',
+            position: 'relative'
         }}>
+            <button
+                onClick={() => onFinish(null)}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+            >
+                Exit
+            </button>
             <h1 style={{ fontSize: '42px', margin: '0 0 15px 0' }}>💣 Minesweeper</h1>
             <div style={{ display: 'flex', gap: '30px', marginBottom: '15px', fontSize: '18px' }}>
                 <div>⏱️ {timer}s</div>
                 <div>🚩 {flagged.flat().filter(f => f).length}/{MINES}</div>
                 <div>🏆 Best: {localHighScore}</div>
             </div>
-            {(gameOver || won) && (
-                <div style={{ marginBottom: '15px', fontSize: '24px', color: won ? '#4CAF50' : '#f44336' }}>
-                    {won ? '🎉 You Win!' : '💥 Game Over!'}
-                </div>
-            )}
+            {/* Removed inline status */}
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${COLS}, 35px)`, gap: '2px', background: '#333', padding: '4px', borderRadius: '8px' }}>
                 {board.map((row, r) => row.map((cell, c) => (
                     <div key={`${r}-${c}`} onClick={() => handleClick(r, c)} onContextMenu={(e) => handleRightClick(e, r, c)}
@@ -146,8 +165,26 @@ const Minesweeper = ({ onFinish, highScore }) => {
                         }}>{getCellContent(r, c)}</div>
                 )))}
             </div>
-            <button onClick={initBoard} style={{ marginTop: '20px', padding: '12px 30px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', fontSize: '18px', cursor: 'pointer' }}>New Game</button>
-            <button onClick={() => onFinish(null)} style={{ marginTop: '15px', background: '#666', color: 'white', border: 'none', padding: '12px 30px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer' }}>Menu</button>
+            {/* Removed Bottom Buttons */}
+
+            {(gameOver || won) && (
+                <div style={{
+                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    background: 'rgba(0,0,0,0.95)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
+                    textAlign: 'center', minWidth: '300px', zIndex: 1000, boxShadow: '0 0 50px rgba(0,0,0,0.7)'
+                }}>
+                    <h2 style={{ color: won ? '#42d392' : '#ff6b6b', marginTop: 0 }}>
+                        {won ? "VICTORY! 🎉" : "GAME OVER 💥"}
+                    </h2>
+                    <p style={{ fontSize: '1.2rem', margin: '1rem 0', color: 'white' }}>
+                        {won ? `Cleared in ${timer}s` : "You hit a mine!"}
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <button onClick={initBoard} style={{ padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px' }}>Play Again</button>
+                        <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#555', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Back to Library</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

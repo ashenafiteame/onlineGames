@@ -8,6 +8,7 @@ const WhackAMole = ({ onFinish, highScore }) => {
     const [gameActive, setGameActive] = useState(false);
     const [gameOver, setGameOver] = useState(false);
     const [localHighScore, setLocalHighScore] = useState(highScore || 0);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
     const moleTimeouts = useRef([]);
 
     useEffect(() => {
@@ -20,6 +21,7 @@ const WhackAMole = ({ onFinish, highScore }) => {
         setMoles(Array(9).fill(false));
         setGameActive(true);
         setGameOver(false);
+        setLastUpdatedUser(null);
     };
 
     const showMole = useCallback(() => {
@@ -60,7 +62,7 @@ const WhackAMole = ({ onFinish, highScore }) => {
         if (gameActive && timeLeft <= 0) {
             setGameActive(false);
             setGameOver(true);
-            GameService.submitScore('whackamole', score);
+            GameService.submitScore('whackamole', score).then((user) => setLastUpdatedUser(user));
             if (score > localHighScore) setLocalHighScore(score);
         }
     }, [timeLeft, gameActive, score, localHighScore]);
@@ -80,12 +82,32 @@ const WhackAMole = ({ onFinish, highScore }) => {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            minHeight: '100vh',
             background: 'linear-gradient(135deg, #8B4513 0%, #654321 100%)',
             fontFamily: 'sans-serif',
             color: 'white',
-            padding: '20px'
+            padding: '20px',
+            position: 'relative',
+            borderRadius: '8px'
         }}>
+            <button
+                onClick={() => onFinish(null)}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+            >
+                Exit
+            </button>
             <h1 style={{ fontSize: '42px', margin: '0 0 15px 0' }}>🔨 Whack-a-Mole</h1>
 
             <div style={{ display: 'flex', gap: '40px', marginBottom: '20px', fontSize: '20px' }}>
@@ -102,14 +124,17 @@ const WhackAMole = ({ onFinish, highScore }) => {
             )}
 
             {gameOver && (
-                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                    <div style={{ fontSize: '28px', marginBottom: '15px' }}>
-                        🎉 Game Over! Score: <span style={{ color: '#ffd700' }}>{score}</span>
+                <div style={{
+                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    background: 'rgba(0,0,0,0.85)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
+                    textAlign: 'center', minWidth: '200px', zIndex: 1000
+                }}>
+                    <h2 style={{ color: '#ff6b6b', marginTop: 0 }}>Game Over!</h2>
+                    <p style={{ fontSize: '1.2rem', margin: '1rem 0' }}>Score: {score}</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <button onClick={startGame} style={{ padding: '10px 20px', fontSize: '1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px' }}>Play Again</button>
+                        <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '10px 20px', fontSize: '1rem', background: '#555', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Back to Library</button>
                     </div>
-                    <button onClick={startGame} style={{
-                        padding: '12px 40px', background: '#4CAF50', color: 'white',
-                        border: 'none', borderRadius: '8px', fontSize: '18px', cursor: 'pointer'
-                    }}>Play Again</button>
                 </div>
             )}
 
@@ -143,11 +168,6 @@ const WhackAMole = ({ onFinish, highScore }) => {
                     </div>
                 ))}
             </div>
-
-            <button onClick={() => onFinish(null)} style={{
-                marginTop: '30px', background: '#666', color: 'white',
-                border: 'none', padding: '12px 30px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer'
-            }}>Menu</button>
         </div>
     );
 };

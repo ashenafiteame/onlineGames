@@ -123,6 +123,7 @@ const Blackjack = ({ onFinish, highScore }) => {
     const [result, setResult] = useState(null);
     const [message, setMessage] = useState('Place your bet!');
     const [localHighScore, setLocalHighScore] = useState(highScore || 0);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
 
     useEffect(() => {
         if (highScore > localHighScore) setLocalHighScore(highScore);
@@ -154,18 +155,20 @@ const Blackjack = ({ onFinish, highScore }) => {
             setResult('push');
             setChips(c => c + bet);
             setGamePhase('gameOver');
+            GameService.submitScore('blackjack', 50).then(user => setLastUpdatedUser(user));
         } else if (playerValue === 21) {
             setMessage("Blackjack! You win 1.5x!");
             setResult('blackjack');
             setChips(c => c + bet + Math.floor(bet * 1.5));
             setGamePhase('gameOver');
             const xp = 250;
-            GameService.submitScore('blackjack', xp);
+            GameService.submitScore('blackjack', xp).then(user => setLastUpdatedUser(user));
             if (xp > localHighScore) setLocalHighScore(xp);
         } else if (dealerValue === 21) {
             setMessage("Dealer Blackjack! You lose.");
             setResult('lose');
             setGamePhase('gameOver');
+            GameService.submitScore('blackjack', 25).then(user => setLastUpdatedUser(user));
         } else {
             setMessage("Hit or Stand?");
         }
@@ -184,6 +187,7 @@ const Blackjack = ({ onFinish, highScore }) => {
             setMessage("Bust! You lose.");
             setResult('lose');
             setGamePhase('gameOver');
+            GameService.submitScore('blackjack', 25).then(user => setLastUpdatedUser(user));
         } else if (value === 21) {
             stand();
         }
@@ -211,6 +215,7 @@ const Blackjack = ({ onFinish, highScore }) => {
             setMessage("Bust! You lose.");
             setResult('lose');
             setGamePhase('gameOver');
+            GameService.submitScore('blackjack', 25).then(user => setLastUpdatedUser(user));
         } else {
             setTimeout(() => dealerPlay(), 500);
         }
@@ -238,22 +243,24 @@ const Blackjack = ({ onFinish, highScore }) => {
                     setResult('win');
                     setChips(c => c + bet * 2);
                     const xp = 200;
-                    GameService.submitScore('blackjack', xp);
+                    GameService.submitScore('blackjack', xp).then(user => setLastUpdatedUser(user));
                     if (xp > localHighScore) setLocalHighScore(xp);
                 } else if (playerValue > finalDealerValue) {
                     setMessage("You win!");
                     setResult('win');
                     setChips(c => c + bet * 2);
                     const xp = 150;
-                    GameService.submitScore('blackjack', xp);
+                    GameService.submitScore('blackjack', xp).then(user => setLastUpdatedUser(user));
                     if (xp > localHighScore) setLocalHighScore(xp);
                 } else if (playerValue < finalDealerValue) {
                     setMessage("Dealer wins!");
                     setResult('lose');
+                    GameService.submitScore('blackjack', 50).then(user => setLastUpdatedUser(user));
                 } else {
                     setMessage("Push! Bet returned.");
                     setResult('push');
                     setChips(c => c + bet);
+                    GameService.submitScore('blackjack', 75).then(user => setLastUpdatedUser(user));
                 }
                 setGamePhase('gameOver');
             }
@@ -279,12 +286,31 @@ const Blackjack = ({ onFinish, highScore }) => {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            minHeight: '100vh',
             background: 'linear-gradient(135deg, #1a472a 0%, #0d5c36 100%)',
             fontFamily: 'sans-serif',
             color: 'white',
-            padding: '20px'
+            padding: '20px',
+            position: 'relative'
         }}>
+            <button
+                onClick={() => onFinish(null)}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+            >
+                Exit
+            </button>
             <h1 style={{ fontSize: '42px', margin: '0 0 10px 0', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
                 🃏 Blackjack
             </h1>
@@ -364,26 +390,19 @@ const Blackjack = ({ onFinish, highScore }) => {
                 </div>
             )}
 
-            {/* Game Over - No chips */}
+            {/* Out of Chips Modal */}
             {isGameOver && (
-                <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: '24px', marginBottom: '20px', color: '#f44336' }}>
-                        💸 Out of chips! Game Over
+                <div style={{
+                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    background: 'rgba(0,0,0,0.95)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
+                    textAlign: 'center', minWidth: '300px', zIndex: 1000, boxShadow: '0 0 50px rgba(0,0,0,0.7)'
+                }}>
+                    <h2 style={{ color: '#ff6b6b', marginTop: 0 }}>BUSTED! 💸</h2>
+                    <p style={{ fontSize: '1.2rem', margin: '1rem 0' }}>You're out of chips!</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <button onClick={() => { setChips(1000); newRound(); }} style={{ padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px' }}>Start Fresh (1000)</button>
+                        <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#555', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Back to Library</button>
                     </div>
-                    <button
-                        onClick={() => { setChips(1000); newRound(); }}
-                        style={{
-                            padding: '15px 30px',
-                            background: '#4CAF50',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '8px',
-                            fontSize: '18px',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        Start Fresh (1000 chips)
-                    </button>
                 </div>
             )}
 
@@ -477,22 +496,7 @@ const Blackjack = ({ onFinish, highScore }) => {
                 </button>
             )}
 
-            {/* Menu Button */}
-            <button
-                onClick={() => onFinish(null)}
-                style={{
-                    marginTop: '30px',
-                    background: '#666',
-                    color: 'white',
-                    border: 'none',
-                    padding: '12px 30px',
-                    borderRadius: '8px',
-                    fontSize: '16px',
-                    cursor: 'pointer'
-                }}
-            >
-                Menu
-            </button>
+            {/* Removed Bottom Menu Button */}
         </div>
     );
 };

@@ -96,6 +96,7 @@ const Sudoku = ({ onFinish, highScore }) => {
     const [gameWon, setGameWon] = useState(false);
     const [mistakes, setMistakes] = useState(0);
     const [localHighScore, setLocalHighScore] = useState(highScore || 0);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
 
     useEffect(() => {
         if (highScore > localHighScore) setLocalHighScore(highScore);
@@ -112,6 +113,7 @@ const Sudoku = ({ onFinish, highScore }) => {
         setIsRunning(true);
         setGameWon(false);
         setMistakes(0);
+        setLastUpdatedUser(null);
     }, []);
 
     useEffect(() => {
@@ -210,7 +212,7 @@ const Sudoku = ({ onFinish, highScore }) => {
                 const mistakePenalty = mistakes * 10;
                 const finalScore = Math.max(10, baseScore + timeBonus - mistakePenalty);
 
-                GameService.submitScore('sudoku', finalScore);
+                GameService.submitScore('sudoku', finalScore).then((user) => setLastUpdatedUser(user));
                 if (finalScore > localHighScore) setLocalHighScore(finalScore);
             }
         }
@@ -263,12 +265,32 @@ const Sudoku = ({ onFinish, highScore }) => {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            minHeight: '100vh',
             background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
             fontFamily: 'sans-serif',
             color: 'white',
-            padding: '20px'
+            padding: '20px',
+            position: 'relative',
+            borderRadius: '8px'
         }}>
+            <button
+                onClick={() => onFinish(null)}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+            >
+                Exit
+            </button>
             <h1 style={{ fontSize: '42px', margin: '0 0 15px 0', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
                 🔢 Sudoku
             </h1>
@@ -323,13 +345,16 @@ const Sudoku = ({ onFinish, highScore }) => {
             {/* Game Won */}
             {gameWon && (
                 <div style={{
-                    background: 'linear-gradient(135deg, #4CAF50, #45a049)',
-                    padding: '15px 30px',
-                    borderRadius: '10px',
-                    marginBottom: '15px',
-                    textAlign: 'center'
+                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    background: 'rgba(0,0,0,0.95)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
+                    textAlign: 'center', minWidth: '300px', zIndex: 1000, boxShadow: '0 0 50px rgba(0,0,0,0.7)'
                 }}>
-                    🎉 Congratulations! Puzzle Solved!
+                    <h2 style={{ color: '#4CAF50', marginTop: 0 }}>Puzzle Solved!</h2>
+                    <p style={{ fontSize: '1.2rem', margin: '1rem 0' }}>Score: {Math.max(10, { easy: 100, medium: 200, hard: 300 }[difficulty] + Math.max(0, 300 - timer) - mistakes * 10)}</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <button onClick={() => startNewGame(difficulty)} style={{ padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px' }}>New Game</button>
+                        <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#555', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Back to Library</button>
+                    </div>
                 </div>
             )}
 
@@ -430,21 +455,7 @@ const Sudoku = ({ onFinish, highScore }) => {
             </div>
 
             {/* Menu Button */}
-            <button
-                onClick={() => onFinish(null)}
-                style={{
-                    marginTop: '20px',
-                    background: '#666',
-                    color: 'white',
-                    border: 'none',
-                    padding: '12px 30px',
-                    borderRadius: '8px',
-                    fontSize: '16px',
-                    cursor: 'pointer'
-                }}
-            >
-                Menu
-            </button>
+            {/* Removed Bottom Menu Button */}
         </div>
     );
 };

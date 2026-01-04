@@ -16,6 +16,7 @@ export default function MotoRacer({ onFinish, highScore }) {
     const [speed, setSpeed] = useState(8); // Faster than cars
     const [gameOver, setGameOver] = useState(false);
     const [gameStarted, setGameStarted] = useState(false);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
 
     const scoreRef = useRef(0);
     scoreRef.current = score;
@@ -124,9 +125,20 @@ export default function MotoRacer({ onFinish, highScore }) {
         setGameOver(true);
         const finalScore = Math.floor(scoreRef.current / 5);
         GameService.submitScore('moto-racer', finalScore).then((user) => {
-            alert(`WIPEOUT! Score: ${finalScore}`);
-            onFinish(user);
+            setLastUpdatedUser(user);
         });
+    };
+
+    const handleRestart = () => {
+        setScore(0);
+        scoreRef.current = 0;
+        setGameOver(false);
+        setGameStarted(false);
+        setObstacles([]);
+        setPlayerX(CANVAS_WIDTH / 2 - 20); // BIKE_WIDTH / 2 roughly
+        setVelocity(0);
+        setSpeed(8);
+        setLastUpdatedUser(null);
     };
 
     // Rendering
@@ -175,7 +187,26 @@ export default function MotoRacer({ onFinish, highScore }) {
 
 
     return (
-        <div style={{ textAlign: 'center' }}>
+        <div style={{ textAlign: 'center', position: 'relative' }}>
+            <button
+                onClick={() => onFinish(null)}
+                style={{
+                    position: 'absolute',
+                    top: '10px',
+                    left: '10px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+            >
+                Exit
+            </button>
             <h2>🏍️ Moto Racer</h2>
             <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '1rem' }}>
                 Use <strong>Left/Right Arrows</strong> to steer. Dodge rocks and puddles!
@@ -184,16 +215,28 @@ export default function MotoRacer({ onFinish, highScore }) {
                 <p>Score: {Math.floor(score / 5)}</p>
                 <p style={{ color: '#ffd700' }}>Best: {highScore}</p>
             </div>
-            {!gameStarted && <p>Press Arrow Keys to Start Engine</p>}
+            {!gameStarted && !gameOver && <p>Press Arrow Keys to Start Engine</p>}
             <canvas
                 ref={canvasRef}
                 width={CANVAS_WIDTH}
                 height={CANVAS_HEIGHT}
                 style={{ border: '4px solid #333', borderRadius: '4px' }}
             />
-            <div>
-                <button onClick={() => onFinish(null)} style={{ marginTop: '20px', background: '#555' }}>Back</button>
-            </div>
+
+            {gameOver && (
+                <div style={{
+                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    background: 'rgba(0,0,0,0.85)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
+                    textAlign: 'center', minWidth: '200px', zIndex: 1000
+                }}>
+                    <h2 style={{ color: '#ff6b6b', marginTop: 0 }}>WIPEOUT!</h2>
+                    <p style={{ fontSize: '1.2rem', margin: '1rem 0' }}>Score: {Math.floor(score / 5)}</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <button onClick={handleRestart} style={{ padding: '10px 20px', fontSize: '1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px' }}>Try Again</button>
+                        <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '10px 20px', fontSize: '1rem', background: '#555', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Back to Library</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

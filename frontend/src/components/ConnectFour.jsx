@@ -22,6 +22,7 @@ const ConnectFour = ({ onFinish, highScore, matchId }) => {
     const [localHighScore, setLocalHighScore] = useState(highScore || 0);
     const [score, setScore] = useState(0);
     const [history, setHistory] = useState([]);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
 
     // Multiplayer state
     const [match, setMatch] = useState(null);
@@ -59,11 +60,27 @@ const ConnectFour = ({ onFinish, highScore, matchId }) => {
                 setCurrentPlayer(YELLOW);
             }
 
-            if (data.status === 'FORFEITED' && data.currentTurn === currentUser.username) {
+            if (data.status === 'FORFEITED' && data.currentTurn === currentUser.username && !winner) {
                 GameService.submitScore('connectfour', 300).then(user => {
-                    alert('Your opponent resigned! You win! 🎉 (+300 XP)');
-                    onFinish(user);
+                    setWinner(data.player1.username === currentUser.username ? RED : YELLOW);
+                    setLastUpdatedUser(user);
                 });
+            }
+
+            if (data.status === 'FINISHED' && !winner) {
+                const boardData = JSON.parse(data.boardData);
+                const result = checkWinner(boardData);
+                if (result) {
+                    setWinner(result.winner);
+                    setWinningCells(result.cells);
+                    // Loser or second player to detect finish gets participation XP if they haven't submitted yet
+                    if (!lastUpdatedUser) {
+                        const isWinner = result.winner === RED && data.player1.username === currentUser.username ||
+                            result.winner === YELLOW && data.player2.username === currentUser.username;
+                        const xp = isWinner ? 300 : (result.winner === 'draw' ? 100 : 50);
+                        GameService.submitScore('connectfour', xp).then(user => setLastUpdatedUser(user));
+                    }
+                }
             }
         } catch (error) {
             console.error('Error fetching match:', error);
@@ -158,16 +175,26 @@ const ConnectFour = ({ onFinish, highScore, matchId }) => {
 
         if (isMultiplayer && match) {
             try {
-                await MatchService.submitMove(matchId, JSON.stringify(newBoard));
+                const nextTurn = match.player1.username === currentUser.username ? match.player2.username : match.player1.username;
+                await MatchService.submitMove(matchId, JSON.stringify(newBoard), nextTurn);
+
                 if (result) {
                     const isWinner = result.winner === RED && match.player1.username === currentUser.username ||
                         result.winner === YELLOW && match.player2.username === currentUser.username;
+
                     if (result.winner !== 'draw' && isWinner) {
                         await MatchService.finishMatch(matchId);
                         const xp = 300;
                         const user = await GameService.submitScore('connectfour', xp);
                         setScore(xp);
                         if (xp > localHighScore) setLocalHighScore(xp);
+                        setLastUpdatedUser(user);
+                    } else if (result.winner === 'draw') {
+                        await MatchService.finishMatch(matchId);
+                        const xp = 100;
+                        const user = await GameService.submitScore('connectfour', xp);
+                        setScore(xp);
+                        setLastUpdatedUser(user);
                     }
                     setWinner(result.winner);
                     setWinningCells(result.cells);
@@ -182,7 +209,7 @@ const ConnectFour = ({ onFinish, highScore, matchId }) => {
                 if (result.winner === RED) {
                     const xp = 200;
                     setScore(xp);
-                    GameService.submitScore('connectfour', xp);
+                    GameService.submitScore('connectfour', xp).then(user => setLastUpdatedUser(user));
                     if (xp > localHighScore) setLocalHighScore(xp);
                 }
             } else {
@@ -356,6 +383,7 @@ const ConnectFour = ({ onFinish, highScore, matchId }) => {
         setIsAIThinking(false);
         setScore(0);
         setHistory([]);
+        setLastUpdatedUser(null);
     };
 
     const handleUndo = () => {
@@ -400,12 +428,31 @@ const ConnectFour = ({ onFinish, highScore, matchId }) => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            minHeight: '100vh',
             background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
             fontFamily: 'sans-serif',
             color: 'white',
-            padding: '20px'
+            padding: '20px',
+            position: 'relative'
         }}>
+            <button
+                onClick={() => onFinish(null)}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+            >
+                Exit
+            </button>
             <h1 style={{ fontSize: '48px', margin: '0 0 20px 0', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
                 Connect Four
             </h1>
@@ -535,21 +582,25 @@ const ConnectFour = ({ onFinish, highScore, matchId }) => {
                         ↩ Undo
                     </button>
                 )}
-                <button
-                    onClick={() => onFinish(null)}
-                    style={{
-                        background: '#666',
-                        color: 'white',
-                        border: 'none',
-                        padding: '12px 30px',
-                        borderRadius: '8px',
-                        fontSize: '18px',
-                        cursor: 'pointer'
-                    }}
-                >
-                    Menu
-                </button>
+                {/* Removed Bottom Menu Button */}
             </div>
+
+            {winner && (
+                <div style={{
+                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    background: 'rgba(0,0,0,0.95)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
+                    textAlign: 'center', minWidth: '300px', zIndex: 1000, boxShadow: '0 0 50px rgba(0,0,0,0.7)'
+                }}>
+                    <h2 style={{ color: winner === RED ? '#ff4444' : winner === YELLOW ? '#ffdd00' : 'white', marginTop: 0 }}>
+                        {winner === 'draw' ? "It's a Draw!" : `${winner === RED ? 'Red' : 'Yellow'} Wins!`}
+                    </h2>
+                    {score > 0 && <p style={{ fontSize: '1.2rem', margin: '1rem 0' }}>Score: {score}</p>}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <button onClick={resetGame} style={{ padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px' }}>New Game</button>
+                        <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#555', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Back to Library</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

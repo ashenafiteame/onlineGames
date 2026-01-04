@@ -18,6 +18,9 @@ export default function Checkers({ onFinish, highScore, matchId }) {
     const [validMoves, setValidMoves] = useState([]);
     const [lastMove, setLastMove] = useState(null);
     const [isMultiplayer, setIsMultiplayer] = useState(!!matchId);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
+    const [gameOver, setGameOver] = useState(false);
+    const [gameOverResult, setGameOverResult] = useState(null); // { won, message }
     const pollInterval = useRef(null);
 
     function initialBoard() {
@@ -66,11 +69,9 @@ export default function Checkers({ onFinish, highScore, matchId }) {
             if (data.status === 'FORFEITED' && data.currentTurn === currentUser.username) {
                 // We won by forfeit! Award winner score
                 GameService.submitScore('checkers', 500).then(user => {
-                    alert('Your opponent resigned! You win! 🎉 (+500 XP)');
-                    onFinish(user);
-                }).catch(() => {
-                    alert('Your opponent resigned! You win! 🎉');
-                    onFinish(null);
+                    setLastUpdatedUser(user);
+                    setGameOver(true);
+                    setGameOverResult({ won: true, message: 'Your opponent resigned! You win! 🎉' });
                 });
                 return;
             }
@@ -253,21 +254,21 @@ export default function Checkers({ onFinish, highScore, matchId }) {
             if (isMultiplayer) {
                 // Submit score for multiplayer game
                 GameService.submitScore('checkers', score).then(user => {
-                    MatchService.finishMatch(matchId).then(() => {
-                        alert(won ? "You Won the Match! 🎉 (+500 XP)" : "Opponent Won! Good game. (+100 XP)");
-                        onFinish(user);
-                    });
+                    setLastUpdatedUser(user);
+                    MatchService.finishMatch(matchId);
+                    setGameOver(true);
+                    setGameOverResult({ won, message: won ? "You Won the Match! 🎉" : "Opponent Won! Good game." });
                 }).catch(err => {
                     console.error('Failed to submit score:', err);
-                    MatchService.finishMatch(matchId).then(() => {
-                        alert(won ? "You Won the Match! 🎉" : "Opponent Won! Good game.");
-                        onFinish(null);
-                    });
+                    MatchService.finishMatch(matchId);
+                    setGameOver(true);
+                    setGameOverResult({ won, message: won ? "You Won the Match! 🎉" : "Opponent Won! Good game." });
                 });
             } else {
                 GameService.submitScore('checkers', redCount > 0 ? 500 : 50).then(user => {
-                    alert(redCount > 0 ? "You Won! 🎉" : "AI Won! Better luck next time.");
-                    onFinish(user);
+                    setLastUpdatedUser(user);
+                    setGameOver(true);
+                    setGameOverResult({ won: redCount > 0, message: redCount > 0 ? "You Won! 🎉" : "AI Won! Better luck next time." });
                 });
             }
         }
@@ -278,25 +279,49 @@ export default function Checkers({ onFinish, highScore, matchId }) {
 
         // Submit a small participation score for resigning (50 XP)
         GameService.submitScore('checkers', 50).then(user => {
-            MatchService.forfeitMatch(matchId)
-                .then(() => {
-                    alert('You resigned. Your opponent wins! (+50 XP)');
-                    onFinish(user);
-                })
-                .catch(err => alert('Failed to forfeit: ' + err.message));
+            setLastUpdatedUser(user);
+            MatchService.forfeitMatch(matchId);
+            setGameOver(true);
+            setGameOverResult({ won: false, message: 'You resigned. Your opponent wins!' });
         }).catch(err => {
             console.error('Failed to submit score:', err);
-            MatchService.forfeitMatch(matchId)
-                .then(() => {
-                    alert('You resigned. Your opponent wins!');
-                    onFinish(null);
-                })
-                .catch(e => alert('Failed to forfeit: ' + e.message));
+            MatchService.forfeitMatch(matchId);
+            setGameOver(true);
+            setGameOverResult({ won: false, message: 'You resigned. Your opponent wins!' });
         });
     };
 
+    const handleRestart = () => {
+        setBoard(initialBoard());
+        setTurn(RED_PLAYER);
+        setSelected(null);
+        setValidMoves([]);
+        setGameOver(false);
+        setGameOverResult(null);
+        setLastUpdatedUser(null);
+    };
+
     return (
-        <div style={{ textAlign: 'center', userSelect: 'none' }}>
+        <div style={{ textAlign: 'center', userSelect: 'none', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <button
+                onClick={() => onFinish(null)}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+            >
+                Exit
+            </button>
             <h2 style={{ marginBottom: '1rem' }}>🏁 Checkers {isMultiplayer ? '(Multiplayer)' : '(Solo vs AI)'}</h2>
             {isMultiplayer && match && (
                 <p style={{ color: '#888', marginBottom: '1rem' }}>
@@ -412,22 +437,28 @@ export default function Checkers({ onFinish, highScore, matchId }) {
                 ))}
             </div>
 
-            <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
-                {!isMultiplayer && (
-                    <button
-                        onClick={() => { if (window.confirm("Restart game?")) { setBoard(initialBoard()); setTurn(RED_PLAYER); setSelected(null); setValidMoves([]); } }}
-                        style={{ background: '#444' }}
-                    >
-                        Restart
-                    </button>
-                )}
-                <button
-                    onClick={() => onFinish(null)}
-                    style={{ background: '#333' }}
-                >
-                    Back to Library
-                </button>
-            </div>
+            {/* Removed Bottom Buttons */}
+
+            {gameOver && (
+                <div style={{
+                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    background: 'rgba(0,0,0,0.95)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
+                    textAlign: 'center', minWidth: '300px', zIndex: 1000, boxShadow: '0 0 50px rgba(0,0,0,0.7)'
+                }}>
+                    <h2 style={{ color: gameOverResult?.won ? '#42d392' : '#ff6b6b', marginTop: 0 }}>
+                        {gameOverResult?.won ? "VICTORY! 🎉" : "GAME OVER"}
+                    </h2>
+                    <p style={{ fontSize: '1.2rem', margin: '1rem 0' }}>
+                        {gameOverResult?.message}
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        {!isMultiplayer && (
+                            <button onClick={handleRestart} style={{ padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px' }}>Play Again</button>
+                        )}
+                        <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#555', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Back to Library</button>
+                    </div>
+                </div>
+            )}
 
             <style>{`
                 @keyframes pulse {

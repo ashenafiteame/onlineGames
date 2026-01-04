@@ -27,6 +27,8 @@ export default function Chess({ onFinish, highScore, matchId }) {
     const [lastMove, setLastMove] = useState(null);
     const [isMultiplayer] = useState(!!matchId);
     const [gameOver, setGameOver] = useState(false);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
+    const [gameResult, setGameResult] = useState(null); // 'win', 'loss', 'draw'
     const pollInterval = useRef(null);
     const aiThinking = useRef(false);
 
@@ -66,11 +68,9 @@ export default function Chess({ onFinish, highScore, matchId }) {
 
             if (data.status === 'FORFEITED' && data.currentTurn === currentUser.username) {
                 GameService.submitScore('chess', 500).then(user => {
-                    alert('Your opponent resigned! You win! 🎉 (+500 XP)');
-                    onFinish(user);
-                }).catch(() => {
-                    alert('Your opponent resigned! You win! 🎉');
-                    onFinish(null);
+                    setLastUpdatedUser(user);
+                    setGameOver(true);
+                    setGameResult('win');
                 });
                 return;
             }
@@ -202,21 +202,19 @@ export default function Chess({ onFinish, highScore, matchId }) {
     const handleGameOver = (whiteKing, blackKing) => {
         setGameOver(true);
         const won = (getMyColor() === 'white' && whiteKing) || (getMyColor() === 'black' && blackKing);
+        setGameResult(won ? 'win' : 'loss');
         const score = won ? 500 : 100;
 
         if (isMultiplayer) {
             GameService.submitScore('chess', score).then(user => {
-                MatchService.finishMatch(matchId).then(() => {
-                    alert(won ? "Checkmate! You Win! 🎉 (+500 XP)" : "Checkmate! You Lose! (+100 XP)");
-                    onFinish(user);
-                });
+                setLastUpdatedUser(user);
+                MatchService.finishMatch(matchId);
             }).catch(() => {
-                MatchService.finishMatch(matchId).then(() => onFinish(null));
+                MatchService.finishMatch(matchId);
             });
         } else {
             GameService.submitScore('chess', whiteKing ? 500 : 50).then(user => {
-                alert(whiteKing ? "You Win! 🎉" : "AI Wins! Better luck next time.");
-                onFinish(user);
+                setLastUpdatedUser(user);
             });
         }
     };
@@ -275,10 +273,9 @@ export default function Chess({ onFinish, highScore, matchId }) {
         }
 
         if (allMoves.length === 0) {
-            GameService.submitScore('chess', 500).then(user => {
-                alert("No moves left! You Win!");
-                onFinish(user);
-            });
+            setGameOver(true);
+            setGameResult('win'); // Player wins if AI has no moves
+            GameService.submitScore('chess', 500).then(user => setLastUpdatedUser(user));
             aiThinking.current = false;
             return;
         }
@@ -355,18 +352,37 @@ export default function Chess({ onFinish, highScore, matchId }) {
 
     const handleForfeit = () => {
         if (!window.confirm('Resign this game? Your opponent wins.')) return;
+        setGameOver(true);
+        setGameResult('loss');
         GameService.submitScore('chess', 50).then(user => {
-            MatchService.forfeitMatch(matchId).then(() => {
-                alert('You resigned. (+50 XP)');
-                onFinish(user);
-            });
+            setLastUpdatedUser(user);
+            MatchService.forfeitMatch(matchId);
         }).catch(() => {
-            MatchService.forfeitMatch(matchId).then(() => onFinish(null));
+            MatchService.forfeitMatch(matchId);
         });
     };
 
     return (
-        <div style={{ textAlign: 'center', userSelect: 'none' }}>
+        <div style={{ textAlign: 'center', userSelect: 'none', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <button
+                onClick={() => onFinish(null)}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+            >
+                Exit
+            </button>
             <h2>♚ Chess {isMultiplayer ? '(Multiplayer)' : '(vs AI)'}</h2>
             {isMultiplayer && match && (
                 <p style={{ color: '#888' }}>
@@ -463,11 +479,26 @@ export default function Chess({ onFinish, highScore, matchId }) {
                 ))}
             </div>
 
-            <div style={{ marginTop: '1.5rem' }}>
-                <button onClick={() => onFinish(null)} style={{ background: '#444' }}>
-                    Back to Library
-                </button>
-            </div>
+            {/* Removed Bottom Button */}
+
+            {gameOver && (
+                <div style={{
+                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    background: 'rgba(0,0,0,0.95)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
+                    textAlign: 'center', minWidth: '300px', zIndex: 1000, boxShadow: '0 0 50px rgba(0,0,0,0.7)'
+                }}>
+                    <h2 style={{ color: gameResult === 'win' ? '#42d392' : '#ff6b6b', marginTop: 0 }}>
+                        {gameResult === 'win' ? "Victory! 🎉" : "Game Over"}
+                    </h2>
+                    <p style={{ fontSize: '1.2rem', margin: '1rem 0' }}>
+                        {gameResult === 'win' ? "You delivered Checkmate!" : "Better luck next time."}
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <button onClick={() => window.location.reload()} style={{ padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px' }}>New Game</button>
+                        <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#555', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Back to Library</button>
+                    </div>
+                </div>
+            )}
 
             <style>{`
                 @keyframes pulse {

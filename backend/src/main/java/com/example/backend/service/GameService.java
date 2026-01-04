@@ -64,12 +64,12 @@ public class GameService {
         return gameRepository.findByType(type);
     }
 
-    public Optional<Game> getGameById(Long id) {
+    public Optional<Game> getGameById(@org.springframework.lang.NonNull Long id) {
         return gameRepository.findById(id);
     }
 
     @Transactional
-    public void deleteGame(Game game) {
+    public void deleteGame(@org.springframework.lang.NonNull Game game) {
         scoreRepository.deleteByGame(game);
         gameRepository.delete(game);
     }

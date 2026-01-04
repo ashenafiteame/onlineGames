@@ -9,6 +9,7 @@ const BrickBreaker = ({ onFinish, highScore }) => {
     const [gameOver, setGameOver] = useState(false);
     const [message, setMessage] = useState("Press Space to Start");
     const [localHighScore, setLocalHighScore] = useState(highScore || 0);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
 
     const ballRef = useRef({ x: 400, y: 300, dx: 4, dy: -4, radius: 8 });
     const paddleRef = useRef({ x: 350, width: 100, height: 15 });
@@ -52,6 +53,7 @@ const BrickBreaker = ({ onFinish, highScore }) => {
         setLives(3);
         setGameActive(true);
         setGameOver(false);
+        setLastUpdatedUser(null);
         setMessage("");
         ballRef.current = { x: 400, y: 300, dx: 4, dy: -4, radius: 8 };
         paddleRef.current = { x: 350, width: 100, height: 15 };
@@ -142,7 +144,7 @@ const BrickBreaker = ({ onFinish, highScore }) => {
                             setGameOver(true);
                             setMessage("🎉 You Win!");
                             const finalScore = score + 10 + (lives * 100);
-                            GameService.submitScore('brickbreaker', finalScore);
+                            GameService.submitScore('brickbreaker', finalScore).then((user) => setLastUpdatedUser(user));
                             if (finalScore > localHighScore) setLocalHighScore(finalScore);
                         }
                     }
@@ -159,7 +161,7 @@ const BrickBreaker = ({ onFinish, highScore }) => {
                     setGameActive(false);
                     setGameOver(true);
                     setMessage("Game Over");
-                    GameService.submitScore('brickbreaker', score);
+                    GameService.submitScore('brickbreaker', score).then((user) => setLastUpdatedUser(user));
                     if (score > localHighScore) setLocalHighScore(score);
                 }
             }
@@ -226,7 +228,26 @@ const BrickBreaker = ({ onFinish, highScore }) => {
     useEffect(() => initBricks(), []);
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh', background: '#000', padding: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#000', padding: '20px', position: 'relative' }}>
+            <button
+                onClick={() => onFinish(null)}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+            >
+                Exit
+            </button>
             <h1 style={{ color: 'white', margin: '0 0 10px 0' }}>🧱 Brick Breaker</h1>
             <div style={{ color: 'white', marginBottom: '10px' }}>🏆 Best: {localHighScore}</div>
             <canvas
@@ -236,7 +257,22 @@ const BrickBreaker = ({ onFinish, highScore }) => {
                 style={{ border: '2px solid #333', borderRadius: '8px', maxWidth: '100%' }}
             />
             <div style={{ color: '#888', marginTop: '10px' }}>Use Left/Right Arrows to move, Space to Launch</div>
-            <button onClick={() => onFinish(null)} style={{ marginTop: '20px', background: '#666', color: 'white', border: 'none', padding: '12px 30px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer' }}>Menu</button>
+            {/* Removed Bottom Menu Button */}
+
+            {gameOver && (
+                <div style={{
+                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    background: 'rgba(0,0,0,0.85)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
+                    textAlign: 'center', minWidth: '200px', zIndex: 1000
+                }}>
+                    <h2 style={{ color: '#ff6b6b', marginTop: 0 }}>{message}</h2>
+                    <p style={{ fontSize: '1.2rem', margin: '1rem 0' }}>Score: {score}</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <button onClick={startGame} style={{ padding: '10px 20px', fontSize: '1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px' }}>Play Again</button>
+                        <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '10px 20px', fontSize: '1rem', background: '#555', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Back to Library</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

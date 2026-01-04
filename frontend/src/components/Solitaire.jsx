@@ -45,6 +45,7 @@ const Solitaire = ({ onFinish, highScore }) => {
     const [moves, setMoves] = useState(0);
     const [won, setWon] = useState(false);
     const [localHighScore, setLocalHighScore] = useState(highScore || 0);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
 
     const checkWin = (foundations) => foundations.every(f => f.length === 13);
 
@@ -132,7 +133,7 @@ const Solitaire = ({ onFinish, highScore }) => {
                 if (checkWin(newGame.foundations)) {
                     setWon(true);
                     const score = Math.max(10, 1000 - moves * 5);
-                    GameService.submitScore('solitaire', score);
+                    GameService.submitScore('solitaire', score).then(user => setLastUpdatedUser(user));
                     if (score > localHighScore) setLocalHighScore(score);
                 }
             }
@@ -154,12 +155,31 @@ const Solitaire = ({ onFinish, highScore }) => {
     );
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh', background: 'linear-gradient(135deg, #1a472a 0%, #0d5c36 100%)', color: 'white', padding: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'linear-gradient(135deg, #1a472a 0%, #0d5c36 100%)', color: 'white', padding: '20px', position: 'relative' }}>
+            <button
+                onClick={() => onFinish(null)}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+            >
+                Exit
+            </button>
             <h1 style={{ fontSize: '36px', margin: '0 0 15px 0' }}>🃏 Solitaire</h1>
             <div style={{ display: 'flex', gap: '20px', marginBottom: '15px' }}>
                 <span>Moves: {moves}</span><span>🏆 Best: {localHighScore}</span>
             </div>
-            {won && <div style={{ fontSize: '28px', color: '#ffd700', marginBottom: '15px' }}>🎉 You Win!</div>}
+            {/* Removed inline status */}
 
             <div style={{ display: 'flex', gap: '15px', marginBottom: '20px' }}>
                 <div onClick={() => handleClick('stock')} style={{ width: '50px', height: '70px', borderRadius: '5px', background: game.stock.length ? 'linear-gradient(135deg, #1565c0, #0d47a1)' : '#2a5a3a', border: '2px dashed #fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -189,8 +209,24 @@ const Solitaire = ({ onFinish, highScore }) => {
                 ))}
             </div>
 
-            <button onClick={() => setGame(initGame())} style={{ marginTop: '20px', padding: '12px 30px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', fontSize: '18px', cursor: 'pointer' }}>New Game</button>
-            <button onClick={() => onFinish(null)} style={{ marginTop: '15px', background: '#666', color: 'white', border: 'none', padding: '12px 30px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer' }}>Menu</button>
+            {/* Removed Bottom Buttons */}
+
+            {won && (
+                <div style={{
+                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    background: 'rgba(0,0,0,0.95)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
+                    textAlign: 'center', minWidth: '300px', zIndex: 1000, boxShadow: '0 0 50px rgba(0,0,0,0.7)'
+                }}>
+                    <h2 style={{ color: '#ffd700', marginTop: 0 }}>VICTORY! 🎉</h2>
+                    <p style={{ fontSize: '1.2rem', margin: '1rem 0', color: 'white' }}>
+                        You cleared the deck in {moves} moves!
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <button onClick={() => { setGame(initGame()); setMoves(0); setWon(false); setLastUpdatedUser(null); }} style={{ padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px' }}>Play Again</button>
+                        <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#555', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Back to Library</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

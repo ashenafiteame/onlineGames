@@ -7,6 +7,7 @@ const FlappyBird = ({ onFinish, highScore }) => {
     const [gameOver, setGameOver] = useState(false);
     const [score, setScore] = useState(0);
     const [localHighScore, setLocalHighScore] = useState(highScore || 0);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
 
     const birdRef = useRef({ y: 200, velocity: 0 });
     const pipesRef = useRef([]);
@@ -28,6 +29,7 @@ const FlappyBird = ({ onFinish, highScore }) => {
         setScore(0);
         setGameOver(false);
         setGameStarted(false);
+        setLastUpdatedUser(null);
     }, []);
 
     const jump = useCallback(() => {
@@ -75,15 +77,17 @@ const FlappyBird = ({ onFinish, highScore }) => {
                 const birdY = birdRef.current.y;
                 if (birdY < 0 || birdY > 560) {
                     setGameOver(true);
-                    GameService.submitScore('flappybird', score * 10);
-                    if (score * 10 > localHighScore) setLocalHighScore(score * 10);
+                    const finalScore = score * 10;
+                    GameService.submitScore('flappybird', finalScore).then(user => setLastUpdatedUser(user));
+                    if (finalScore > localHighScore) setLocalHighScore(finalScore);
                 }
                 pipesRef.current.forEach(pipe => {
                     if (90 > pipe.x && 50 < pipe.x + PIPE_WIDTH) {
                         if (birdY < pipe.gapY - PIPE_GAP / 2 || birdY > pipe.gapY + PIPE_GAP / 2) {
                             setGameOver(true);
-                            GameService.submitScore('flappybird', score * 10);
-                            if (score * 10 > localHighScore) setLocalHighScore(score * 10);
+                            const finalScore = score * 10;
+                            GameService.submitScore('flappybird', finalScore).then(user => setLastUpdatedUser(user));
+                            if (finalScore > localHighScore) setLocalHighScore(finalScore);
                         }
                     }
                 });
@@ -130,12 +134,6 @@ const FlappyBird = ({ onFinish, highScore }) => {
             if (gameOver) {
                 ctx.fillStyle = 'rgba(0,0,0,0.5)';
                 ctx.fillRect(0, 0, 400, 600);
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 40px Arial';
-                ctx.fillText('Game Over', 200, 280);
-                ctx.font = '24px Arial';
-                ctx.fillText(`Score: ${score}`, 200, 330);
-                ctx.fillText('Click to Retry', 200, 380);
             }
 
             frameRef.current = requestAnimationFrame(gameLoop);
@@ -146,11 +144,44 @@ const FlappyBird = ({ onFinish, highScore }) => {
     }, [gameStarted, gameOver, score, localHighScore]);
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh', background: '#1a1a2e', padding: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: '#1a1a2e', padding: '20px', position: 'relative' }}>
+            <button
+                onClick={() => onFinish(null)}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+            >
+                Exit
+            </button>
             <h1 style={{ color: 'white', margin: '0 0 10px 0' }}>🐦 Flappy Bird</h1>
             <div style={{ color: 'white', marginBottom: '10px' }}>🏆 Best: {localHighScore}</div>
             <canvas ref={canvasRef} width={400} height={600} onClick={jump} style={{ borderRadius: '10px', cursor: 'pointer' }} />
-            <button onClick={() => onFinish(null)} style={{ marginTop: '20px', background: '#666', color: 'white', border: 'none', padding: '12px 30px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer' }}>Menu</button>
+
+            {gameOver && (
+                <div style={{
+                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    background: 'rgba(0,0,0,0.95)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
+                    textAlign: 'center', minWidth: '250px', zIndex: 1000, boxShadow: '0 0 50px rgba(0,0,0,0.7)'
+                }}>
+                    <h2 style={{ color: '#ff6b6b', marginTop: 0 }}>CRASHED! 🐦</h2>
+                    <p style={{ fontSize: '1.2rem', margin: '1rem 0', color: 'white' }}>Score: {score * 10}</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <button onClick={resetGame} style={{ padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px' }}>Try Again</button>
+                        <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#555', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Back to Library</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

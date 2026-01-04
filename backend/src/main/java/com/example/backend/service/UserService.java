@@ -38,7 +38,7 @@ public class UserService {
         return userRepository.findByUsername(username);
     }
 
-    public Optional<User> findById(Long id) {
+    public Optional<User> findById(@org.springframework.lang.NonNull Long id) {
         return userRepository.findById(id);
     }
 
@@ -46,7 +46,7 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    public User registerUser(User user) {
+    public User registerUser(@org.springframework.lang.NonNull User user) {
         if (userRepository.findByUsername(user.getUsername()).isPresent()) {
             throw new IllegalArgumentException("Username already exists");
         }
@@ -60,12 +60,12 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    public User saveUser(User user) {
+    public User saveUser(@org.springframework.lang.NonNull User user) {
         return userRepository.save(user);
     }
 
     @org.springframework.transaction.annotation.Transactional
-    public void deleteUser(Long id) {
+    public void deleteUser(@org.springframework.lang.NonNull Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
 
@@ -78,7 +78,7 @@ public class UserService {
         userRepository.delete(user);
     }
 
-    public User toggleUserRole(Long id) {
+    public User toggleUserRole(@org.springframework.lang.NonNull Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -100,7 +100,7 @@ public class UserService {
     }
 
     // Update user's last active timestamp
-    public void updateLastActive(User user) {
+    public void updateLastActive(@org.springframework.lang.NonNull User user) {
         user.setLastActiveAt(LocalDateTime.now());
         userRepository.save(user);
     }

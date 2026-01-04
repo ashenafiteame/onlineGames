@@ -16,6 +16,7 @@ export default function TicTacToe({ onFinish, highScore, matchId, onRematch }) {
     const [winLine, setWinLine] = useState(null);
     const [isMultiplayer] = useState(!!matchId);
     const [showRestartModal, setShowRestartModal] = useState(false);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
 
     // Rematch states: null (idle), 'sending', 'waiting' (sent, waiting for accept), 'invited' (received invite)
     const [rematchStatus, setRematchStatus] = useState(null);
@@ -157,7 +158,8 @@ export default function TicTacToe({ onFinish, highScore, matchId, onRematch }) {
     const handleGameOver = (result) => {
         // Just submit scores here, the useEffect handles the modal
         if (result === 'draw') {
-            GameService.submitScore('tictactoe', 100).then(() => {
+            GameService.submitScore('tictactoe', 100).then((user) => {
+                setLastUpdatedUser(user);
                 if (isMultiplayer) MatchService.finishMatch(matchId);
             });
         } else {
@@ -165,7 +167,8 @@ export default function TicTacToe({ onFinish, highScore, matchId, onRematch }) {
             const won = result === mySymbol;
             const score = won ? 300 : 50;
 
-            GameService.submitScore('tictactoe', score).then(() => {
+            GameService.submitScore('tictactoe', score).then((user) => {
+                setLastUpdatedUser(user);
                 // Only the winner needs to signal finish in MP to avoid race, but it's safe if both do
                 if (isMultiplayer) MatchService.finishMatch(matchId);
             }).catch(() => {
@@ -305,6 +308,7 @@ export default function TicTacToe({ onFinish, highScore, matchId, onRematch }) {
             setWinner(null);
             setWinLine(null);
             setShowRestartModal(false);
+            setLastUpdatedUser(null);
         }
     };
 
@@ -339,6 +343,25 @@ export default function TicTacToe({ onFinish, highScore, matchId, onRematch }) {
 
     return (
         <div style={{ textAlign: 'center', userSelect: 'none', position: 'relative' }}>
+            <button
+                onClick={() => onFinish(null)}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+            >
+                Exit
+            </button>
             <h2 style={{ marginBottom: '0.5rem' }}>❌⭕ Tic-Tac-Toe {isMultiplayer ? '(Multiplayer)' : '(vs AI)'}</h2>
 
             {isMultiplayer && match && (
@@ -466,10 +489,10 @@ export default function TicTacToe({ onFinish, highScore, matchId, onRematch }) {
 
                         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
                             <button
-                                onClick={() => onFinish(null)}
+                                onClick={() => onFinish(lastUpdatedUser)}
                                 style={{ padding: '12px 24px', background: '#444', border: 'none', borderRadius: '8px', color: 'white', cursor: 'pointer', fontWeight: 'bold' }}
                             >
-                                Exit
+                                Back to Library
                             </button>
 
                             {rematchStatus === 'invited' ? (
@@ -501,11 +524,7 @@ export default function TicTacToe({ onFinish, highScore, matchId, onRematch }) {
                 </>
             )}
 
-            <div style={{ marginTop: '1.5rem' }}>
-                <button onClick={() => onFinish(null)} style={{ background: '#444' }}>
-                    Back to Library
-                </button>
-            </div>
+            {/* Removed Bottom Button */}
 
             <style>{`
                 @keyframes pulse {

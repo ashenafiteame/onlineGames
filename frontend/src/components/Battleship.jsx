@@ -17,6 +17,7 @@ const Battleship = ({ onFinish, highScore }) => {
     const [message, setMessage] = useState('Place your ships! Click to place, R to rotate.');
     const [winner, setWinner] = useState(null);
     const [localHighScore, setLocalHighScore] = useState(highScore || 0);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
 
     const placeShipsRandomly = useCallback((board) => {
         const b = board.map(r => [...r]);
@@ -89,7 +90,7 @@ const Battleship = ({ onFinish, highScore }) => {
             setWinner('player');
             setMessage('🎉 You Win!');
             const score = 500;
-            GameService.submitScore('battleship', score);
+            GameService.submitScore('battleship', score).then(user => setLastUpdatedUser(user));
             if (score > localHighScore) setLocalHighScore(score);
             return;
         }
@@ -109,6 +110,7 @@ const Battleship = ({ onFinish, highScore }) => {
                 setPhase('gameOver');
                 setWinner('enemy');
                 setMessage('💥 Enemy Wins!');
+                GameService.submitScore('battleship', 50).then(user => setLastUpdatedUser(user));
             }
         }, 500);
     };
@@ -122,6 +124,7 @@ const Battleship = ({ onFinish, highScore }) => {
         setCurrentShipIdx(0);
         setMessage('Place your ships!');
         setWinner(null);
+        setLastUpdatedUser(null);
     };
 
     React.useEffect(() => {
@@ -151,7 +154,26 @@ const Battleship = ({ onFinish, highScore }) => {
     );
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100vh', background: 'linear-gradient(135deg, #0d47a1 0%, #1565c0 100%)', color: 'white', padding: '20px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'linear-gradient(135deg, #0d47a1 0%, #1565c0 100%)', color: 'white', padding: '20px', position: 'relative' }}>
+            <button
+                onClick={() => onFinish(null)}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+            >
+                Exit
+            </button>
             <h1 style={{ fontSize: '36px', margin: '0 0 15px 0' }}>🚢 Battleship</h1>
             <div style={{ marginBottom: '15px', fontSize: '16px', padding: '10px 20px', background: '#333', borderRadius: '8px' }}>{message}</div>
             {phase === 'placing' && <div style={{ marginBottom: '10px' }}>Ship {currentShipIdx + 1}/{SHIPS.length} (Length: {SHIPS[currentShipIdx]}) - {isHorizontal ? 'Horizontal' : 'Vertical'}</div>}
@@ -165,8 +187,26 @@ const Battleship = ({ onFinish, highScore }) => {
                     {renderBoard(enemyBoard, playerShots, true, phase === 'playing' ? fire : null)}
                 </div>
             </div>
-            <button onClick={restart} style={{ marginTop: '20px', padding: '12px 30px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '8px', fontSize: '18px', cursor: 'pointer' }}>New Game</button>
-            <button onClick={() => onFinish(null)} style={{ marginTop: '15px', background: '#666', color: 'white', border: 'none', padding: '12px 30px', borderRadius: '8px', fontSize: '16px', cursor: 'pointer' }}>Menu</button>
+            {/* Removed Bottom Buttons */}
+
+            {phase === 'gameOver' && (
+                <div style={{
+                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    background: 'rgba(0,0,0,0.95)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
+                    textAlign: 'center', minWidth: '300px', zIndex: 1000, boxShadow: '0 0 50px rgba(0,0,0,0.7)'
+                }}>
+                    <h2 style={{ color: winner === 'player' ? '#42d392' : '#ff6b6b', marginTop: 0 }}>
+                        {winner === 'player' ? "VICTORY! 🎉" : "DEFEAT! 💥"}
+                    </h2>
+                    <p style={{ fontSize: '1.2rem', margin: '1rem 0' }}>
+                        {winner === 'player' ? "You sank the enemy fleet!" : "The enemy fleet prevailed."}
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <button onClick={restart} style={{ padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px' }}>Play Again</button>
+                        <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#555', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Back to Library</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

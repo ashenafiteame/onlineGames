@@ -150,7 +150,7 @@ export default function OnlinePanel({ onStartMatch }) {
                                 <div>
                                     <strong style={{ fontSize: '0.85rem' }}>{match.player1.displayName || match.player1.username}</strong>
                                     <div style={{ fontSize: '0.7rem', color: '#888' }}>
-                                        {match.gameType === 'chess' ? '♚ Chess' : match.gameType === 'tictactoe' ? '❌ Tic-Tac-Toe' : '🏁 Checkers'}
+                                        {match.gameType === 'chess' ? '♚ Chess' : match.gameType === 'tictactoe' ? '❌ Tic-Tac-Toe' : match.gameType === 'connectfour' ? '🔴 Connect Four' : '🏁 Checkers'}
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: '6px' }}>
@@ -175,7 +175,7 @@ export default function OnlinePanel({ onStartMatch }) {
                             }}>
                                 <div>
                                     <strong style={{ fontSize: '0.85rem' }}>
-                                        {match.gameType === 'chess' ? '♚' : match.gameType === 'tictactoe' ? '❌' : '🏁'} vs {match.player1.username === currentUser?.username ? match.player2.username : match.player1.username}
+                                        {match.gameType === 'chess' ? '♚' : match.gameType === 'tictactoe' ? '❌' : match.gameType === 'connectfour' ? '🔴' : '🏁'} vs {match.player1.username === currentUser?.username ? match.player2.username : match.player1.username}
                                     </strong>
                                     <div style={{ fontSize: '0.7rem', color: match.currentTurn === currentUser?.username ? '#42d392' : '#888' }}>
                                         {match.currentTurn === currentUser?.username ? "Your turn!" : "Waiting..."}

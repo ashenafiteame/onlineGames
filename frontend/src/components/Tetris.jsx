@@ -37,6 +37,7 @@ const Tetris = ({ onFinish, highScore }) => {
     const [gameOver, setGameOver] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [localHighScore, setLocalHighScore] = useState(highScore || 0);
+    const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
 
     const gameLoopRef = useRef(null);
     const lastDropRef = useRef(Date.now());
@@ -53,7 +54,7 @@ const Tetris = ({ onFinish, highScore }) => {
         // Check if spawn position is blocked (game over)
         if (checkCollision(board, piece.shape, { x: startX, y: 0 })) {
             setGameOver(true);
-            GameService.submitScore('tetris', score);
+            GameService.submitScore('tetris', score).then(user => setLastUpdatedUser(user));
             if (score > localHighScore) setLocalHighScore(score);
             return;
         }
@@ -272,6 +273,7 @@ const Tetris = ({ onFinish, highScore }) => {
         setLevel(1);
         setGameOver(false);
         setIsPaused(false);
+        setLastUpdatedUser(null);
     };
 
     // Render the board with current piece
@@ -328,11 +330,31 @@ const Tetris = ({ onFinish, highScore }) => {
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            height: '100vh',
             background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
             fontFamily: 'sans-serif',
-            color: 'white'
+            color: 'white',
+            position: 'relative',
+            padding: '20px'
         }}>
+            <button
+                onClick={() => onFinish(null)}
+                style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    background: '#333',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 16px',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                }}
+            >
+                Exit
+            </button>
             <h1 style={{ fontSize: '48px', margin: '0 0 20px 0', textShadow: '2px 2px 4px rgba(0,0,0,0.5)' }}>
                 TETRIS
             </h1>
@@ -416,93 +438,52 @@ const Tetris = ({ onFinish, highScore }) => {
                         <div>P Pause</div>
                     </div>
 
-                    {/* Buttons */}
+                    {/* Removed Bottom Buttons */}
+                </div>
+            </div>
+
+            {/* Game Over / Pause Overlay */}
+            {isPaused && !gameOver && (
+                <div style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.8)', display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', zIndex: 100
+                }}>
+                    <h2 style={{ fontSize: '48px', marginBottom: '20px' }}>PAUSED</h2>
                     <button
-                        onClick={initGame}
+                        onClick={() => setIsPaused(false)}
                         style={{
-                            background: '#4CAF50',
-                            color: 'white',
-                            border: 'none',
-                            padding: '12px 24px',
-                            borderRadius: '5px',
-                            fontSize: '16px',
-                            fontWeight: 'bold',
-                            cursor: 'pointer'
+                            background: '#4CAF50', color: 'white', border: 'none',
+                            padding: '15px 30px', borderRadius: '5px', fontSize: '20px',
+                            fontWeight: 'bold', cursor: 'pointer', marginBottom: '10px'
                         }}
                     >
-                        New Game
+                        Resume
                     </button>
-
                     <button
                         onClick={() => onFinish(null)}
                         style={{
-                            background: '#666',
-                            color: 'white',
-                            border: 'none',
-                            padding: '12px 24px',
-                            borderRadius: '5px',
-                            fontSize: '16px',
-                            cursor: 'pointer'
+                            background: '#666', color: 'white', border: 'none',
+                            padding: '15px 30px', borderRadius: '5px', fontSize: '20px', cursor: 'pointer'
                         }}
                     >
                         Menu
                     </button>
                 </div>
-            </div>
+            )}
 
-            {/* Game Over / Pause Overlay */}
-            {(gameOver || isPaused) && (
+            {gameOver && (
                 <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'rgba(0,0,0,0.8)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 100
+                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                    background: 'rgba(0,0,0,0.95)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
+                    textAlign: 'center', minWidth: '300px', zIndex: 1000, boxShadow: '0 0 50px rgba(0,0,0,0.7)'
                 }}>
-                    <h2 style={{ fontSize: '48px', marginBottom: '20px' }}>
-                        {gameOver ? 'GAME OVER' : 'PAUSED'}
-                    </h2>
-                    {gameOver && (
-                        <div style={{ fontSize: '24px', marginBottom: '20px' }}>
-                            Final Score: {score}
-                        </div>
-                    )}
-                    <button
-                        onClick={gameOver ? initGame : () => setIsPaused(false)}
-                        style={{
-                            background: '#4CAF50',
-                            color: 'white',
-                            border: 'none',
-                            padding: '15px 30px',
-                            borderRadius: '5px',
-                            fontSize: '20px',
-                            fontWeight: 'bold',
-                            cursor: 'pointer',
-                            marginBottom: '10px'
-                        }}
-                    >
-                        {gameOver ? 'Play Again' : 'Resume'}
-                    </button>
-                    <button
-                        onClick={() => onFinish(null)}
-                        style={{
-                            background: '#666',
-                            color: 'white',
-                            border: 'none',
-                            padding: '15px 30px',
-                            borderRadius: '5px',
-                            fontSize: '20px',
-                            cursor: 'pointer'
-                        }}
-                    >
-                        Menu
-                    </button>
+                    <h2 style={{ color: '#ff6b6b', marginTop: 0 }}>GAME OVER! 🧱</h2>
+                    <p style={{ fontSize: '1.2rem', margin: '1rem 0', color: 'white' }}>Score: {score}</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        <button onClick={initGame} style={{ padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px' }}>Play Again</button>
+                        <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#555', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Back to Library</button>
+                    </div>
                 </div>
             )}
         </div>
