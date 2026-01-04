@@ -442,6 +442,35 @@ export default function TicTacToe({ onFinish, highScore, matchId, onRematch }) {
                 ))}
             </div>
 
+            {/* New Game Button - only in single player mode */}
+            {!isMultiplayer && (
+                <button
+                    onClick={() => {
+                        setBoard(Array(9).fill(EMPTY));
+                        setTurn(X);
+                        setWinner(null);
+                        setWinLine(null);
+                        setShowRestartModal(false);
+                        setLastUpdatedUser(null);
+                    }}
+                    style={{
+                        display: 'block',
+                        margin: '20px auto 0',
+                        padding: '12px 30px',
+                        background: 'rgba(102, 126, 234, 0.2)',
+                        color: '#667eea',
+                        border: '1px solid rgba(102, 126, 234, 0.3)',
+                        borderRadius: '8px',
+                        fontSize: '1rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                    }}
+                >
+                    🔄 New Game
+                </button>
+            )}
+
             {winner && !showRestartModal && (
                 <div style={{
                     marginTop: '1.5rem',

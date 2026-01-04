@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { SocialService } from '../services/SocialService';
 
-export default function ActivityFeed() {
+export default function ActivityFeed({ onViewProfile }) {
     const [activities, setActivities] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -51,7 +51,18 @@ export default function ActivityFeed() {
                         }}>
                             <span style={{ fontSize: '1.2rem' }}>{getActivityIcon(activity.type)}</span>
                             <div>
-                                <strong style={{ color: 'var(--primary)' }}>{activity.user.username}</strong>
+                                <strong
+                                    style={{
+                                        color: 'var(--primary)',
+                                        cursor: onViewProfile ? 'pointer' : 'default',
+                                        textDecoration: onViewProfile ? 'none' : 'none'
+                                    }}
+                                    onClick={() => onViewProfile && onViewProfile(activity.user.username)}
+                                    onMouseEnter={(e) => onViewProfile && (e.target.style.textDecoration = 'underline')}
+                                    onMouseLeave={(e) => e.target.style.textDecoration = 'none'}
+                                >
+                                    {activity.user.username}
+                                </strong>
                                 <span style={{ marginLeft: '4px', color: '#ccc' }}>{activity.content}</span>
                                 <div style={{ fontSize: '0.7rem', color: '#666', marginTop: '2px' }}>
                                     {new Date(activity.createdAt).toLocaleString()}

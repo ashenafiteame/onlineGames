@@ -14,6 +14,18 @@ export default function SnakeGame({ onFinish, highScore }) {
     const [gameStarted, setGameStarted] = useState(false);
     const [displayHighScore, setDisplayHighScore] = useState(highScore);
     const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
+    const [touchStart, setTouchStart] = useState(null);
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Detect mobile device
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth <= 768 || 'ontouchstart' in window);
+        };
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Update local high score if prop changes (e.g. on mount)
     useEffect(() => {
@@ -22,6 +34,9 @@ export default function SnakeGame({ onFinish, highScore }) {
 
     useEffect(() => {
         const handleKeyDown = (e) => {
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+                e.preventDefault(); // Prevent page scrolling
+            }
             if (!gameStarted && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
                 setGameStarted(true);
                 setDirection({ x: 1, y: 0 }); // Default start direction
@@ -36,6 +51,51 @@ export default function SnakeGame({ onFinish, highScore }) {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [direction, gameStarted]);
+
+    // Swipe gesture handling
+    const handleTouchStart = (e) => {
+        setTouchStart({ x: e.touches[0].clientX, y: e.touches[0].clientY });
+    };
+
+    const handleTouchEnd = (e) => {
+        if (!touchStart) return;
+        const touchEnd = { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+        const dx = touchEnd.x - touchStart.x;
+        const dy = touchEnd.y - touchStart.y;
+        const minSwipe = 30;
+
+        if (Math.abs(dx) > Math.abs(dy)) {
+            // Horizontal swipe
+            if (dx > minSwipe && direction.x === 0) {
+                handleDirectionChange('right');
+            } else if (dx < -minSwipe && direction.x === 0) {
+                handleDirectionChange('left');
+            }
+        } else {
+            // Vertical swipe
+            if (dy > minSwipe && direction.y === 0) {
+                handleDirectionChange('down');
+            } else if (dy < -minSwipe && direction.y === 0) {
+                handleDirectionChange('up');
+            }
+        }
+        setTouchStart(null);
+    };
+
+    // Unified direction change handler (used by both keyboard and touch)
+    const handleDirectionChange = (dir) => {
+        if (!gameStarted) {
+            setGameStarted(true);
+            setDirection({ x: 1, y: 0 });
+            return;
+        }
+        switch (dir) {
+            case 'up': if (direction.y === 0) setDirection({ x: 0, y: -1 }); break;
+            case 'down': if (direction.y === 0) setDirection({ x: 0, y: 1 }); break;
+            case 'left': if (direction.x === 0) setDirection({ x: -1, y: 0 }); break;
+            case 'right': if (direction.x === 0) setDirection({ x: 1, y: 0 }); break;
+        }
+    };
 
     useEffect(() => {
         if (gameOver || !gameStarted) return;
@@ -102,17 +162,79 @@ export default function SnakeGame({ onFinish, highScore }) {
 
     const draw = (snakeArr, foodPos) => {
         const ctx = canvasRef.current.getContext('2d');
-        ctx.fillStyle = '#222';
+
+        // Dark gradient background
+        const bgGradient = ctx.createLinearGradient(0, 0, GRID_SIZE * TILE_SIZE, GRID_SIZE * TILE_SIZE);
+        bgGradient.addColorStop(0, '#1a1a2e');
+        bgGradient.addColorStop(1, '#16213e');
+        ctx.fillStyle = bgGradient;
         ctx.fillRect(0, 0, GRID_SIZE * TILE_SIZE, GRID_SIZE * TILE_SIZE);
 
-        // Food
-        ctx.fillStyle = '#ff6b6b';
-        ctx.fillRect(foodPos.x * TILE_SIZE, foodPos.y * TILE_SIZE, TILE_SIZE - 2, TILE_SIZE - 2);
+        // Grid lines (subtle)
+        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= GRID_SIZE; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i * TILE_SIZE, 0);
+            ctx.lineTo(i * TILE_SIZE, GRID_SIZE * TILE_SIZE);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, i * TILE_SIZE);
+            ctx.lineTo(GRID_SIZE * TILE_SIZE, i * TILE_SIZE);
+            ctx.stroke();
+        }
 
-        // Snake
-        ctx.fillStyle = '#42d392';
-        snakeArr.forEach(part => {
-            ctx.fillRect(part.x * TILE_SIZE, part.y * TILE_SIZE, TILE_SIZE - 2, TILE_SIZE - 2);
+        // Food with glow effect
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#ff6b6b';
+        ctx.fillStyle = '#ff6b6b';
+        ctx.beginPath();
+        ctx.arc(
+            foodPos.x * TILE_SIZE + TILE_SIZE / 2,
+            foodPos.y * TILE_SIZE + TILE_SIZE / 2,
+            TILE_SIZE / 2 - 2,
+            0,
+            Math.PI * 2
+        );
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Snake with gradient coloring
+        snakeArr.forEach((part, index) => {
+            const ratio = index / snakeArr.length;
+            const r = Math.round(66 + (20 * ratio));
+            const g = Math.round(211 - (60 * ratio));
+            const b = Math.round(146 - (40 * ratio));
+
+            ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+
+            // Rounded rectangle for each segment
+            const x = part.x * TILE_SIZE + 1;
+            const y = part.y * TILE_SIZE + 1;
+            const w = TILE_SIZE - 2;
+            const h = TILE_SIZE - 2;
+            const radius = 4;
+
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + w - radius, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+            ctx.lineTo(x + w, y + h - radius);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+            ctx.lineTo(x + radius, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.fill();
+
+            // Head highlight
+            if (index === 0) {
+                ctx.fillStyle = 'rgba(255,255,255,0.3)';
+                ctx.beginPath();
+                ctx.arc(x + w / 2, y + h / 2, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
         });
     };
 
@@ -122,57 +244,273 @@ export default function SnakeGame({ onFinish, highScore }) {
     }, []);
 
     return (
-        <div style={{ textAlign: 'center', position: 'relative' }}>
+        <div style={{
+            textAlign: 'center',
+            position: 'relative',
+            background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+            padding: '40px 20px',
+            minHeight: '80vh',
+            borderRadius: '20px'
+        }}>
             <button
                 onClick={() => onFinish(null)}
                 style={{
                     position: 'absolute',
-                    top: '10px',
-                    left: '10px',
-                    background: '#333',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '4px',
+                    top: '20px',
+                    left: '20px',
+                    background: 'rgba(255,255,255,0.1)',
+                    color: '#e0e0e0',
+                    border: '1px solid rgba(255,255,255,0.15)',
+                    padding: '10px 20px',
+                    borderRadius: '25px',
                     cursor: 'pointer',
                     zIndex: 100,
                     fontWeight: 'bold',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    backdropFilter: 'blur(5px)',
+                    transition: 'all 0.2s ease'
                 }}
             >
-                Exit
+                ← Exit
             </button>
-            <h2>🐍 Snake</h2>
-            <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                Use <strong>Arrow Keys</strong> to move. Eat food (red) to grow. Avoid walls and your tail!
+
+            <h1 style={{
+                fontSize: '2.8rem',
+                marginBottom: '8px',
+                color: '#42d392',
+                textShadow: '0 0 30px rgba(66,211,146,0.3)'
+            }}>
+                🐍 Snake
+            </h1>
+            <p style={{ color: '#7f8c8d', fontSize: '1rem', marginBottom: '1.5rem' }}>
+                Use <span style={{ color: '#42d392', fontWeight: 'bold' }}>Arrow Keys</span> to move. Eat the glowing food to grow!
             </p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginBottom: '0.5rem' }}>
-                <p>Score: {score}</p>
-                <p style={{ color: '#ffd700' }}>High Score: {displayHighScore}</p>
+
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: '3rem',
+                marginBottom: '1.5rem',
+                fontSize: '1.2rem',
+                fontWeight: '600'
+            }}>
+                <div style={{
+                    background: 'rgba(255,255,255,0.05)',
+                    padding: '10px 25px',
+                    borderRadius: '30px',
+                    border: '1px solid rgba(255,255,255,0.1)'
+                }}>
+                    Score: <span style={{ color: '#42d392' }}>{score}</span>
+                </div>
+                <div style={{
+                    background: 'rgba(255,215,0,0.1)',
+                    padding: '10px 25px',
+                    borderRadius: '30px',
+                    border: '1px solid rgba(255,215,0,0.2)',
+                    color: '#ffd700'
+                }}>
+                    Best: {displayHighScore}
+                </div>
             </div>
-            {!gameStarted && <p>Press any Arrow Key to Start</p>}
-            <canvas
-                ref={canvasRef}
-                width={GRID_SIZE * TILE_SIZE}
-                height={GRID_SIZE * TILE_SIZE}
-                style={{ border: '2px solid #555', background: '#222', borderRadius: '4px' }}
-            />
-            {/* Removed redundant bottom Back button */}
+
+            {!gameStarted && (
+                <div style={{
+                    color: '#e0e0e0',
+                    marginBottom: '1rem',
+                    padding: '15px 30px',
+                    background: 'rgba(66,211,146,0.15)',
+                    borderRadius: '30px',
+                    display: 'inline-block',
+                    animation: 'pulse 2s infinite'
+                }}>
+                    {isMobile ? '👆 Tap a direction or swipe to start!' : '⌨️ Press any Arrow Key to Start'}
+                </div>
+            )}
+
+            <div
+                style={{
+                    display: 'inline-block',
+                    padding: '8px',
+                    background: 'rgba(0,0,0,0.3)',
+                    borderRadius: '16px',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.4), inset 0 0 20px rgba(0,0,0,0.2)'
+                }}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
+            >
+                <canvas
+                    ref={canvasRef}
+                    width={GRID_SIZE * TILE_SIZE}
+                    height={GRID_SIZE * TILE_SIZE}
+                    style={{
+                        borderRadius: '12px',
+                        display: 'block'
+                    }}
+                />
+            </div>
+
+            {/* Mobile D-Pad Controls */}
+            {isMobile && !gameOver && (
+                <div style={{
+                    marginTop: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '5px'
+                }}>
+                    <button
+                        onClick={() => handleDirectionChange('up')}
+                        style={{
+                            width: '60px',
+                            height: '60px',
+                            borderRadius: '50%',
+                            border: 'none',
+                            background: 'rgba(66,211,146,0.3)',
+                            color: '#42d392',
+                            fontSize: '24px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
+                        }}
+                    >
+                        ▲
+                    </button>
+                    <div style={{ display: 'flex', gap: '50px' }}>
+                        <button
+                            onClick={() => handleDirectionChange('left')}
+                            style={{
+                                width: '60px',
+                                height: '60px',
+                                borderRadius: '50%',
+                                border: 'none',
+                                background: 'rgba(66,211,146,0.3)',
+                                color: '#42d392',
+                                fontSize: '24px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
+                            }}
+                        >
+                            ◀
+                        </button>
+                        <button
+                            onClick={() => handleDirectionChange('right')}
+                            style={{
+                                width: '60px',
+                                height: '60px',
+                                borderRadius: '50%',
+                                border: 'none',
+                                background: 'rgba(66,211,146,0.3)',
+                                color: '#42d392',
+                                fontSize: '24px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
+                            }}
+                        >
+                            ▶
+                        </button>
+                    </div>
+                    <button
+                        onClick={() => handleDirectionChange('down')}
+                        style={{
+                            width: '60px',
+                            height: '60px',
+                            borderRadius: '50%',
+                            border: 'none',
+                            background: 'rgba(66,211,146,0.3)',
+                            color: '#42d392',
+                            fontSize: '24px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            boxShadow: '0 4px 15px rgba(0,0,0,0.3)'
+                        }}
+                    >
+                        ▼
+                    </button>
+                </div>
+            )}
 
             {gameOver && (
                 <div style={{
-                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                    background: 'rgba(0,0,0,0.95)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
-                    textAlign: 'center', minWidth: '300px', zIndex: 1000, boxShadow: '0 0 50px rgba(0,0,0,0.7)'
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.85)',
+                    display: 'flex', justifyContent: 'center', alignItems: 'center',
+                    zIndex: 1000, backdropFilter: 'blur(8px)'
                 }}>
-                    <h2 style={{ color: '#ff6b6b', marginTop: 0 }}>GAME OVER! 🐍</h2>
-                    <p style={{ fontSize: '1.2rem', margin: '1rem 0', color: 'white' }}>Score: {score}</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                        <button onClick={handleRestart} style={{ padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px' }}>Try Again</button>
-                        <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#555', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Back to Library</button>
+                    <div style={{
+                        background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
+                        padding: '40px 50px',
+                        borderRadius: '24px',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        textAlign: 'center',
+                        boxShadow: '0 20px 60px rgba(0,0,0,0.5)'
+                    }}>
+                        <h2 style={{
+                            color: '#ff6b6b',
+                            marginTop: 0,
+                            fontSize: '2.2rem',
+                            textShadow: '0 0 20px rgba(255,107,107,0.4)'
+                        }}>
+                            Game Over! 🐍
+                        </h2>
+                        <p style={{ fontSize: '1.4rem', margin: '1rem 0', color: '#e0e0e0' }}>
+                            Final Score: <span style={{ color: '#42d392', fontWeight: 'bold' }}>{score}</span>
+                        </p>
+                        {score >= displayHighScore && score > 0 && (
+                            <p style={{ color: '#ffd700', fontSize: '1.1rem', marginBottom: '1.5rem' }}>
+                                🏆 New High Score!
+                            </p>
+                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            <button
+                                onClick={handleRestart}
+                                style={{
+                                    padding: '14px 40px',
+                                    fontSize: '1.1rem',
+                                    cursor: 'pointer',
+                                    background: 'linear-gradient(135deg, #42d392 0%, #2ecc71 100%)',
+                                    color: '#1a1a2e',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    fontWeight: 'bold',
+                                    boxShadow: '0 4px 15px rgba(66,211,146,0.3)'
+                                }}
+                            >
+                                Play Again
+                            </button>
+                            <button
+                                onClick={() => onFinish(lastUpdatedUser)}
+                                style={{
+                                    padding: '14px 40px',
+                                    fontSize: '1.1rem',
+                                    background: 'transparent',
+                                    color: '#7f8c8d',
+                                    border: '1px solid rgba(255,255,255,0.15)',
+                                    borderRadius: '12px',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Back to Library
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
+
+            <style>{`
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.7; }
+                }
+            `}</style>
         </div>
     );
 }

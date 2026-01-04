@@ -126,13 +126,19 @@ function App() {
       case 'library':
         return (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '2rem', alignItems: 'start' }}>
-            <GameLibrary onSelectGame={(type) => setView(`game-${type}`)} />
+            <GameLibrary onSelectGame={(type) => {
+              setSelectedMatch(null); // Clear any previous match to ensure single-player mode
+              setView(`game-${type}`);
+            }} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <OnlinePanel onStartMatch={(matchId, gameType) => {
                 setSelectedMatch(matchId);
                 setView(`game-${gameType || 'checkers'}`);
               }} />
-              <ActivityFeed />
+              <ActivityFeed onViewProfile={(username) => {
+                setSelectedProfile(username);
+                setView('profile');
+              }} />
             </div>
           </div>
         );
@@ -217,7 +223,13 @@ function App() {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1>🕹️ Online Game Studio</h1>
+        <h1
+          onClick={() => setView('library')}
+          style={{ cursor: 'pointer', userSelect: 'none' }}
+          title="Return to Game Library"
+        >
+          🕹️ Online Game Studio
+        </h1>
         {user && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <div
