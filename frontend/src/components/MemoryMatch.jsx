@@ -56,70 +56,116 @@ export default function MemoryMatch({ onFinish, highScore }) {
     }, [matched, gameOver, cards.length, moves]);
 
     return (
-        <div style={{ textAlign: 'center', position: 'relative' }}>
+        <div style={{
+            textAlign: 'center',
+            position: 'relative',
+            padding: '40px 20px',
+            background: '#f8f9fa', // Clean off-white
+            borderRadius: '20px',
+            minHeight: '80vh',
+            color: '#2c3e50', // Professional dark blue-gray
+            fontFamily: "'Inter', sans-serif"
+        }}>
             <button
                 onClick={() => onFinish(null)}
                 style={{
                     position: 'absolute',
-                    top: '10px',
-                    left: '10px',
-                    background: '#333',
-                    color: 'white',
+                    top: '20px',
+                    left: '20px',
+                    background: '#e9ecef',
+                    color: '#495057',
                     border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '4px',
+                    padding: '8px 20px',
+                    borderRadius: '8px',
                     cursor: 'pointer',
                     zIndex: 100,
                     fontWeight: 'bold',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    transition: 'background 0.2s'
                 }}
             >
                 Exit
             </button>
-            <h2>🧠 Memory Match</h2>
-            <p style={{ color: '#aaa', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                Flip cards to find matching pairs. Find all pairs to win!
+            <h1 style={{ fontSize: '2.5rem', marginBottom: '8px', color: '#2c3e50' }}>🧠 Memory Match</h1>
+            <p style={{ color: '#6c757d', fontSize: '1rem', marginBottom: '2rem' }}>
+                Classic concentration game. Find all the matching pairs.
             </p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '2rem', marginBottom: '1rem' }}>
-                <p>Moves: {moves}</p>
-                <p style={{ color: '#ffd700' }}>High Score: {highScore}</p>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '3rem', marginBottom: '2rem', fontSize: '1.2rem', fontWeight: '500' }}>
+                <div>Moves: <span style={{ color: '#4a90e2' }}>{moves}</span></div>
+                <div style={{ color: '#f39c12' }}>High Score: {highScore}</div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', maxWidth: '400px', margin: '0 auto' }}>
+
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: '15px',
+                maxWidth: '440px',
+                margin: '0 auto'
+            }}>
                 {cards.map((card, index) => (
                     <div
                         key={card.id}
                         onClick={() => handleCardClick(index)}
                         style={{
-                            height: '80px',
-                            backgroundColor: flipped.includes(index) || matched.includes(index) ? '#fff' : '#646cff',
-                            color: '#000',
+                            height: '90px',
+                            backgroundColor: flipped.includes(index) || matched.includes(index) ? '#fff' : '#4a90e2', // Professional Blue
+                            border: '1px solid rgba(0,0,0,0.05)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            fontSize: '2rem',
+                            fontSize: '2.2rem',
                             cursor: 'pointer',
-                            borderRadius: '8px',
-                            transition: 'transform 0.3s'
+                            borderRadius: '12px',
+                            transition: 'all 0.3s ease',
+                            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+                            userSelect: 'none'
                         }}
                     >
-                        {(flipped.includes(index) || matched.includes(index)) ? card.emoji : '❓'}
+                        {(flipped.includes(index) || matched.includes(index)) ? card.emoji : ' '}
                     </div>
                 ))}
             </div>
-            <button onClick={shuffleCards} style={{ marginTop: '20px' }}>Restart</button>
-            {/* Removed bottom button */}
+
+            <button
+                onClick={shuffleCards}
+                style={{
+                    marginTop: '30px',
+                    padding: '12px 32px',
+                    fontSize: '1rem',
+                    background: '#2c3e50',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontWeight: 'bold',
+                    cursor: 'pointer'
+                }}
+            >
+                New Game
+            </button>
 
             {gameOver && (
                 <div style={{
-                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                    background: 'rgba(0,0,0,0.85)', padding: '2rem', borderRadius: '10px', border: '1px solid #444',
-                    textAlign: 'center', minWidth: '200px', zIndex: 1000
+                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(255,255,255,0.9)',
+                    display: 'flex', flexDirection: 'column', justifyContent: 'center',
+                    alignItems: 'center', zIndex: 1000, backdropFilter: 'blur(4px)'
                 }}>
-                    <h2 style={{ color: '#4CAF50', marginTop: 0 }}>You Won!</h2>
-                    <p style={{ fontSize: '1.2rem', margin: '1rem 0' }}>Moves: {moves}</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <button onClick={shuffleCards} style={{ padding: '10px 20px', fontSize: '1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px' }}>Play Again</button>
-                        <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '10px 20px', fontSize: '1rem', background: '#555', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Back to Library</button>
+                    <div style={{
+                        background: '#fff',
+                        padding: '40px',
+                        borderRadius: '20px',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.15)',
+                        border: '1px solid #dee2e6',
+                        textAlign: 'center'
+                    }}>
+                        <h2 style={{ color: '#2c3e50', marginTop: 0, fontSize: '2rem' }}>Well Done! 🎉</h2>
+                        <p style={{ fontSize: '1.2rem', margin: '15px 0', color: '#6c757d' }}>
+                            Finished in <span style={{ fontWeight: 'bold', color: '#4a90e2' }}>{moves}</span> moves.
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '20px' }}>
+                            <button onClick={shuffleCards} style={{ padding: '14px 28px', fontSize: '1rem', cursor: 'pointer', background: '#4a90e2', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 'bold' }}>Play Again</button>
+                            <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '14px 28px', fontSize: '1rem', background: 'transparent', color: '#6c757d', border: '1px solid #dee2e6', borderRadius: '10px', cursor: 'pointer' }}>Back to Library</button>
+                        </div>
                     </div>
                 </div>
             )}

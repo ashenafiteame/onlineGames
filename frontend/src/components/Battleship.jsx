@@ -153,27 +153,105 @@ const Battleship = ({ onFinish, highScore }) => {
         </div>
     );
 
+    const [showRules, setShowRules] = useState(false);
+
+    const RulesModal = () => (
+        <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(5px)',
+            display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 300,
+            animation: 'fadeIn 0.3s ease'
+        }}>
+            <div style={{
+                background: '#222', border: '1px solid #444', borderRadius: '20px',
+                padding: '30px', maxWidth: '500px', width: '90%', maxHeight: '80vh', overflowY: 'auto',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.5)', color: '#eee',
+                position: 'relative'
+            }}>
+                <button
+                    onClick={() => setShowRules(false)}
+                    style={{
+                        position: 'absolute', top: '15px', right: '15px',
+                        background: 'transparent', border: 'none', color: '#888',
+                        fontSize: '24px', cursor: 'pointer'
+                    }}
+                >&times;</button>
+
+                <h2 style={{ marginTop: 0, borderBottom: '2px solid #333', paddingBottom: '10px', color: '#2196F3' }}>🚢 Battleship Rules</h2>
+
+                <div style={{ marginBottom: '20px' }}>
+                    <h3 style={{ color: '#aaa', fontSize: '1.1rem' }}>Objective</h3>
+                    <p>Locate and sink all five of the enemy's hidden ships before they sink yours! Each ship must be hit at every coordinate it occupies to be sunk.</p>
+                </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                    <h3 style={{ color: '#aaa', fontSize: '1.1rem' }}>1. Placement Phase</h3>
+                    <ul style={{ paddingLeft: '20px', lineHeight: '1.6' }}>
+                        <li>Deploy your 5 ships on the <strong>Your Fleet</strong> grid.</li>
+                        <li>Click a square to place the current ship.</li>
+                        <li>Press <strong>'R'</strong> on your keyboard to rotate (Horizontal/Vertical).</li>
+                    </ul>
+                </div>
+
+                <div style={{ marginBottom: '20px' }}>
+                    <h3 style={{ color: '#aaa', fontSize: '1.1rem' }}>2. Battle Phase</h3>
+                    <ul style={{ paddingLeft: '20px', lineHeight: '1.6' }}>
+                        <li>Take turns firing at the <strong>Enemy Fleet</strong> grid.</li>
+                        <li><strong>💥 Hit:</strong> You found part of an enemy ship!</li>
+                        <li><strong>• Miss:</strong> The shot landed in open water.</li>
+                        <li>Keep track of your shots to narrow down the enemy locations.</li>
+                    </ul>
+                </div>
+
+                <button
+                    onClick={() => setShowRules(false)}
+                    style={{
+                        width: '100%', padding: '12px', background: '#2196F3', color: 'white',
+                        border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: 'bold',
+                        cursor: 'pointer', marginTop: '10px'
+                    }}
+                >
+                    Ready for Battle!
+                </button>
+            </div>
+        </div>
+    );
+
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'linear-gradient(135deg, #0d47a1 0%, #1565c0 100%)', color: 'white', padding: '20px', position: 'relative' }}>
-            <button
-                onClick={() => onFinish(null)}
-                style={{
-                    position: 'absolute',
-                    top: '20px',
-                    left: '20px',
-                    background: '#333',
-                    color: 'white',
-                    border: 'none',
-                    padding: '8px 16px',
-                    borderRadius: '4px',
-                    cursor: 'pointer',
-                    zIndex: 100,
-                    fontWeight: 'bold',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-                }}
-            >
-                Exit
-            </button>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', background: 'linear-gradient(135deg, #0d47a1 0%, #1565c0 100%)', color: 'white', padding: '20px', position: 'relative', minHeight: '100vh' }}>
+            <div style={{ position: 'absolute', top: '20px', left: '20px', display: 'flex', gap: '10px', zIndex: 100 }}>
+                <button
+                    onClick={() => onFinish(null)}
+                    style={{
+                        background: '#333',
+                        color: 'white',
+                        border: 'none',
+                        padding: '8px 16px',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                    }}
+                >
+                    Exit
+                </button>
+                <button
+                    onClick={() => setShowRules(true)}
+                    style={{
+                        background: 'rgba(255,255,255,0.1)',
+                        color: 'white',
+                        border: '1px solid rgba(255,255,255,0.2)',
+                        padding: '8px 16px',
+                        borderRadius: '20px',
+                        cursor: 'pointer',
+                        backdropFilter: 'blur(5px)',
+                        fontWeight: 'bold'
+                    }}
+                >
+                    Rules
+                </button>
+            </div>
+
             <h1 style={{ fontSize: '36px', margin: '0 0 15px 0' }}>🚢 Battleship</h1>
             <div style={{ marginBottom: '15px', fontSize: '16px', padding: '10px 20px', background: '#333', borderRadius: '8px' }}>{message}</div>
             {phase === 'placing' && <div style={{ marginBottom: '10px' }}>Ship {currentShipIdx + 1}/{SHIPS.length} (Length: {SHIPS[currentShipIdx]}) - {isHorizontal ? 'Horizontal' : 'Vertical'}</div>}
@@ -187,7 +265,8 @@ const Battleship = ({ onFinish, highScore }) => {
                     {renderBoard(enemyBoard, playerShots, true, phase === 'playing' ? fire : null)}
                 </div>
             </div>
-            {/* Removed Bottom Buttons */}
+
+            {showRules && <RulesModal />}
 
             {phase === 'gameOver' && (
                 <div style={{
