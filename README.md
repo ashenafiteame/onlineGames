@@ -13,37 +13,31 @@ A full-stack arcade platform featuring a **React** frontend and **Spring Boot** 
     -   **Friends System**: Add/Remove friends and view their status.
     -   **Activity Feed**: See what your friends are playing.
     -   **Leaderboards**: Global rankings for every game.
--   **Game Library**:
+-   **Game Library UI Enhancements**:
+    -   **Dynamic Categorization**: Games are automatically sorted into **Multiplayer** and **Solo** sections.
+    -   **Library Filtering**: A sleek menu bar allows you to filter the library by **All**, **Multiplayer**, or **Solo** games.
+    -   **Recently Played**: A horizontal scrolling section at the top shows your last 5 played games with "time ago" timestamps for quick resumption.
+-   **🎮 Multiplayer & Dual-Mode Games**:
+    -   *These games support both local **Solo** play against AI and **Online** play via a real-time lobby system.*
+    -   **Uno**: Classic card matching vs 3 Bots or online friends.
+    -   **Checkers**: Classic board game logic.
+    -   **Chess**: Standard chess against AI or human opponents.
+    -   **Tic-Tac-Toe**: Classic 3x3 grid matching.
+    -   **Connect Four**: Drop discs to connect 4 in a row.
+-   **🎯 Solo Arcade & Puzzles**:
     -   **🧠 Memory Match**: Test your memory by finding card pairs.
     -   **🔢 Guess the Number**: Logic puzzle to find the hidden number.
     -   **🐍 Snake**: Classic arcade snake game.
     -   **🎈 Balloon Popper**: Fast-paced reaction clicker.
     -   **🏎️ Lane Racer**: Highway traffic dodging game.
     -   **🏍️ Moto Racer**: High-speed motorbike racing with smooth steering.
-    -   **🕹️ Multiplayer Games**:
-        -   **Tic-Tac-Toe**: Classic 3x3 grid matching.
-        -   **Connect Four**: Drop discs to connect 4 in a row.
-        -   **Checkers**: Classic board game logic.
-        -   **Chess**: Standard chess against AI.
-    -   **🧩 Solo Puzzle Strategy**:
-        -   **2048**: Tile combining puzzle.
-        -   **Sudoku**: 9x9 Grid puzzle with notes.
-        -   **Tetris**: Falling blocks arcade.
-        -   **Minesweeper**: Classic mine-sweeping logic.
-        -   **Reversi / Othello**: Territory flipping strategy.
-        -   **Battleship**: Naval combat strategy.
-    -   **🃏 Card Games**:
-        -   **Blackjack**: Casino classic vs Dealer.
-        -   **Solitaire**: Klondike patience.
-        -   **Uno**: Classic card matching vs 3 Bots.
-    -   **⚡ Quick Arcade**:
-        -   **Whack-a-Mole**: Reflex testing fun.
-        -   **Flappy Bird**: Flying skill challenge.
-        -   **Brick Breaker**: Breakout style arcade.
+    -   **🧩 Puzzles**: 2048, Sudoku, Tetris, Minesweeper, Reversi, Battleship.
+    -   **⚡ Quick Play**: Whack-a-Mole, Flappy Bird, Brick Breaker.
+    -   **🃏 Casino**: Blackjack, Solitaire.
 -   **Tech Stack**:
-    -   **Backend**: Spring Boot 3 (Java 21), Spring Data JPA.
+    -   **Backend**: Spring Boot 3 (Java 21), Spring Data JPA, WebSockets for Multiplayer.
     -   **Database**: PostgreSQL 15 (Dockerized).
-    -   **Frontend**: React + Vite with premium dark-mode styling.
+    -   **Frontend**: React + Vite with premium dark-mode styling and glassmorphism UI.
 
 ## 📋 Prerequisites
 
