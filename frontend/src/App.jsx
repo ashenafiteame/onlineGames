@@ -31,13 +31,15 @@ import WhackAMole from './components/WhackAMole';
 import Minesweeper from './components/Minesweeper';
 import Reversi from './components/Reversi';
 import Battleship from './components/Battleship';
-
 import FlappyBird from './components/FlappyBird';
 import BrickBreaker from './components/BrickBreaker';
 import OnlinePanel from './components/OnlinePanel';
-import UnoLobby from './components/UnoLobby';
+import MultiplayerLobby from './components/MultiplayerLobby';
+import CheckersMultiplayer from './components/CheckersMultiplayer';
 import UnoMultiplayer from './components/UnoMultiplayer';
-
+import TicTacToeMultiplayer from './components/TicTacToeMultiplayer';
+import ConnectFourMultiplayer from './components/ConnectFourMultiplayer';
+import ChessMultiplayer from './components/ChessMultiplayer';
 
 function App() {
   const [user, setUser] = useState(AuthService.getCurrentUser());
@@ -49,27 +51,38 @@ function App() {
   const [showMenu, setShowMenu] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [unoRoom, setUnoRoom] = useState(null);
-  const [unoInviteCode, setUnoInviteCode] = useState(null);
+  const [checkersRoom, setCheckersRoom] = useState(null);
+  const [tictactoeRoom, setTicTacToeRoom] = useState(null);
+  const [connectFourRoom, setConnectFourRoom] = useState(null);
+  const [chessRoom, setChessRoom] = useState(null);
+  const [inviteCode, setInviteCode] = useState(null);
 
-  // Check URL for UNO invite code on mount
+  // Check URL for invite code on mount
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const inviteCode = params.get('uno');
-    if (inviteCode) {
-      setUnoInviteCode(inviteCode);
-      // Clean URL
+    const code = params.get('room') || params.get('uno');
+    if (code) {
+      setInviteCode(code);
       window.history.replaceState({}, document.title, window.location.pathname);
     }
   }, []);
 
-  // Auto-navigate to UNO lobby if invite code present and user logged in
+  // Auto-navigate to lobby if invite code present
   useEffect(() => {
-    if (unoInviteCode && user && view === 'library') {
-      setView('game-uno-lobby');
+    if (inviteCode && user && view === 'library') {
+      // Default to a generic lobby join behavior? 
+      // Since we don't know the game, we rely on the user navigating or 
+      // we could add a "Join Game" generic input in Library.
+      // For now, if the param was 'uno', we default to unofficial Uno Lobby hack
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('uno')) {
+        setView('game-uno-lobby');
+      } else {
+        // For now, stay in library, but maybe alert?
+        // "You have an invite code: " + inviteCode + ". Select the game to join."
+      }
     }
-  }, [unoInviteCode, user, view]);
-
-
+  }, [inviteCode, user, view]);
 
   const refreshUser = () => {
     setUser(AuthService.getCurrentUser());
@@ -104,7 +117,6 @@ function App() {
   };
 
   const handleGameFinish = (updatedUser) => {
-    // Always refresh user from localStorage to pick up any score updates
     const latestUser = AuthService.getCurrentUser();
     if (latestUser) {
       setUser(latestUser);
@@ -149,7 +161,7 @@ function App() {
         return (
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '2rem', alignItems: 'start' }}>
             <GameLibrary onSelectGame={(type) => {
-              setSelectedMatch(null); // Clear any previous match to ensure single-player mode
+              setSelectedMatch(null);
               setView(`game-${type}`);
             }} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -164,75 +176,128 @@ function App() {
             </div>
           </div>
         );
-      case 'game-memory':
-        return <MemoryMatch onFinish={handleGameFinish} highScore={getHighScore('memory')} />;
-      case 'game-guess':
-        return <GuessNumber onFinish={handleGameFinish} highScore={getHighScore('guess')} />;
-      case 'game-snake':
-        return <SnakeGame onFinish={handleGameFinish} highScore={getHighScore('snake')} />;
-      case 'game-balloon':
-        return <BalloonPopper onFinish={handleGameFinish} highScore={getHighScore('balloon')} />;
-      case 'game-lane-racer':
-        return <LaneRacer onFinish={handleGameFinish} highScore={getHighScore('lane-racer')} />;
-      case 'game-moto-racer':
-        return <MotoRacer onFinish={handleGameFinish} highScore={getHighScore('moto-racer')} />;
-      case 'game-checkers':
-        return <Checkers
-          onFinish={(user) => {
-            handleGameFinish(user);
-            setSelectedMatch(null);
+
+      // Games
+      case 'game-memory': return <MemoryMatch onFinish={handleGameFinish} highScore={getHighScore('memory')} />;
+      case 'game-guess': return <GuessNumber onFinish={handleGameFinish} highScore={getHighScore('guess')} />;
+      case 'game-snake': return <SnakeGame onFinish={handleGameFinish} highScore={getHighScore('snake')} />;
+      case 'game-balloon': return <BalloonPopper onFinish={handleGameFinish} highScore={getHighScore('balloon')} />;
+      case 'game-lane-racer': return <LaneRacer onFinish={handleGameFinish} highScore={getHighScore('lane-racer')} />;
+      case 'game-moto-racer': return <MotoRacer onFinish={handleGameFinish} highScore={getHighScore('moto-racer')} />;
+
+      // Checkers
+      case 'game-checkers-solo':
+        return <Checkers onFinish={handleGameFinish} highScore={getHighScore('checkers')} matchId={selectedMatch} />;
+      case 'game-checkers-lobby':
+        return <MultiplayerLobby
+          gameType="checkers"
+          gameName="Checkers"
+          initialInviteCode={inviteCode}
+          onBack={() => { setInviteCode(null); setView('library'); }}
+          onStart={(room) => {
+            setCheckersRoom(room);
+            setInviteCode(null);
+            setView('game-checkers-multiplayer');
           }}
-          highScore={getHighScore('checkers')}
-          matchId={selectedMatch}
         />;
-      case 'game-chess':
-        return <Chess
-          onFinish={(user) => {
-            handleGameFinish(user);
-            setSelectedMatch(null);
+      case 'game-checkers-multiplayer':
+        return <CheckersMultiplayer
+          room={checkersRoom}
+          onFinish={() => {
+            setCheckersRoom(null);
+            handleGameFinish(null);
           }}
-          highScore={getHighScore('chess')}
-          matchId={selectedMatch}
         />;
-      case 'game-tictactoe':
-        return <TicTacToe
-          onFinish={(user) => {
-            handleGameFinish(user);
-            setSelectedMatch(null);
+
+      // Chess
+      case 'game-chess-solo':
+        return <Chess onFinish={handleGameFinish} highScore={getHighScore('chess')} matchId={selectedMatch} />;
+      case 'game-chess-lobby':
+        return <MultiplayerLobby
+          gameType="chess"
+          gameName="Chess"
+          initialInviteCode={inviteCode}
+          onBack={() => { setInviteCode(null); setView('library'); }}
+          onStart={(room) => {
+            setChessRoom(room);
+            setInviteCode(null);
+            setView('game-chess-multiplayer');
           }}
-          onRematch={(matchId) => handleStartMatch(matchId, 'tictactoe')}
-          highScore={getHighScore('tictactoe')}
-          matchId={selectedMatch}
         />;
-      case 'game-2048':
-        return <Game2048 onFinish={handleGameFinish} highScore={getHighScore('2048')} />;
-      case 'game-tetris':
-        return <Tetris onFinish={handleGameFinish} highScore={getHighScore('tetris')} />;
-      case 'game-connectfour':
-        return <ConnectFour
-          onFinish={(user) => {
-            handleGameFinish(user);
-            setSelectedMatch(null);
+      case 'game-chess-multiplayer':
+        return <ChessMultiplayer
+          room={chessRoom}
+          onFinish={() => {
+            setChessRoom(null);
+            handleGameFinish(null);
           }}
-          highScore={getHighScore('connectfour')}
-          matchId={selectedMatch}
         />;
-      case 'game-sudoku':
-        return <Sudoku onFinish={handleGameFinish} highScore={getHighScore('sudoku')} />;
-      case 'game-blackjack':
-        return <Blackjack onFinish={handleGameFinish} highScore={getHighScore('blackjack')} />;
-      case 'game-uno':
+      // Tic-Tac-Toe
+      case 'game-tictactoe-solo':
+        return <TicTacToe onFinish={handleGameFinish} onRematch={(matchId) => setSelectedMatch(matchId)} highScore={getHighScore('tictactoe')} matchId={selectedMatch} />;
+      case 'game-tictactoe-lobby':
+        return <MultiplayerLobby
+          gameType="tictactoe"
+          gameName="Tic-Tac-Toe"
+          initialInviteCode={inviteCode}
+          onBack={() => { setInviteCode(null); setView('library'); }}
+          onStart={(room) => {
+            setTicTacToeRoom(room);
+            setInviteCode(null);
+            setView('game-tictactoe-multiplayer');
+          }}
+        />;
+      case 'game-tictactoe-multiplayer':
+        return <TicTacToeMultiplayer
+          room={tictactoeRoom}
+          onFinish={() => {
+            setTicTacToeRoom(null);
+            handleGameFinish(null);
+          }}
+        />;
+      case 'game-2048': return <Game2048 onFinish={handleGameFinish} highScore={getHighScore('2048')} />;
+      case 'game-tetris': return <Tetris onFinish={handleGameFinish} highScore={getHighScore('tetris')} />;
+      // Connect Four
+      case 'game-connectfour-solo':
+        return <ConnectFour onFinish={handleGameFinish} highScore={getHighScore('connectfour')} matchId={selectedMatch} />;
+      case 'game-connectfour-lobby':
+        return <MultiplayerLobby
+          gameType="connectfour"
+          gameName="Connect Four"
+          initialInviteCode={inviteCode}
+          onBack={() => { setInviteCode(null); setView('library'); }}
+          onStart={(room) => {
+            setConnectFourRoom(room);
+            setInviteCode(null);
+            setView('game-connectfour-multiplayer');
+          }}
+        />;
+      case 'game-connectfour-multiplayer':
+        return <ConnectFourMultiplayer
+          room={connectFourRoom}
+          onFinish={() => {
+            setConnectFourRoom(null);
+            handleGameFinish(null);
+          }}
+        />;
+      case 'game-sudoku': return <Sudoku onFinish={handleGameFinish} highScore={getHighScore('sudoku')} />;
+      case 'game-blackjack': return <Blackjack onFinish={handleGameFinish} highScore={getHighScore('blackjack')} />;
+
+      // UNO
+      case 'game-uno-solo':
         return <Uno onFinish={handleGameFinish} highScore={getHighScore('uno')} />;
       case 'game-uno-lobby':
-        return <UnoLobby
-          initialInviteCode={unoInviteCode}
+        return <MultiplayerLobby
+          gameType="uno"
+          gameName="UNO"
+          initialInviteCode={inviteCode}
           onBack={() => {
-            setUnoInviteCode(null);
+            setInviteCode(null);
             setView('library');
           }}
-          onStartGame={(room) => {
+          onStart={(room) => {
             setUnoRoom(room);
-            setUnoInviteCode(null);
+            setInviteCode(null);
             setView('game-uno-multiplayer');
           }}
         />;
@@ -244,148 +309,49 @@ function App() {
             handleGameFinish(null);
           }}
         />;
-      case 'game-solitaire':
-        return <Solitaire onFinish={handleGameFinish} highScore={getHighScore('solitaire')} />;
-      case 'game-whackamole':
-        return <WhackAMole onFinish={handleGameFinish} highScore={getHighScore('whackamole')} />;
-      case 'game-minesweeper':
-        return <Minesweeper onFinish={handleGameFinish} highScore={getHighScore('minesweeper')} />;
-      case 'game-reversi':
-        return <Reversi onFinish={handleGameFinish} highScore={getHighScore('reversi')} />;
-      case 'game-battleship':
-        return <Battleship onFinish={handleGameFinish} highScore={getHighScore('battleship')} />;
-      case 'game-flappybird':
-        return <FlappyBird onFinish={handleGameFinish} highScore={getHighScore('flappybird')} />;
-      case 'game-brickbreaker':
-        return <BrickBreaker onFinish={handleGameFinish} highScore={getHighScore('brickbreaker')} />;
-      default:
-        return <GameLibrary onSelectGame={(type) => setView(`game-${type}`)} />;
+
+      case 'game-solitaire': return <Solitaire onFinish={handleGameFinish} highScore={getHighScore('solitaire')} />;
+      case 'game-whackamole': return <WhackAMole onFinish={handleGameFinish} highScore={getHighScore('whackamole')} />;
+      case 'game-minesweeper': return <Minesweeper onFinish={handleGameFinish} highScore={getHighScore('minesweeper')} />;
+      case 'game-reversi': return <Reversi onFinish={handleGameFinish} highScore={getHighScore('reversi')} />;
+      case 'game-battleship': return <Battleship onFinish={handleGameFinish} highScore={getHighScore('battleship')} />;
+      case 'game-flappybird': return <FlappyBird onFinish={handleGameFinish} highScore={getHighScore('flappybird')} />;
+      case 'game-brickbreaker': return <BrickBreaker onFinish={handleGameFinish} highScore={getHighScore('brickbreaker')} />;
+
+      default: return <GameLibrary onSelectGame={(type) => setView(`game-${type}`)} />;
     }
   };
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1
-          onClick={() => setView('library')}
-          style={{ cursor: 'pointer', userSelect: 'none' }}
-          title="Return to Game Library"
-        >
+        <h1 onClick={() => setView('library')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Return to Game Library">
           🕹️ Online Game Studio
         </h1>
         {user && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <div
-              style={{ textAlign: 'right', cursor: 'pointer' }}
-              onClick={() => {
-                setSelectedProfile(user.username);
-                setView('profile');
-              }}
-            >
+            <div style={{ textAlign: 'right', cursor: 'pointer' }} onClick={() => { setSelectedProfile(user.username); setView('profile'); }}>
               <div style={{ fontWeight: 'bold' }}>{user.displayName || user.username}</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>
                 {isAdmin && <span style={{ background: '#764ba2', padding: '0.15rem 0.4rem', borderRadius: '4px', marginRight: '0.5rem', fontSize: '0.7rem' }}>ADMIN</span>}
                 Level {user.level || 1} • Score: {user.totalScore || 0}
               </div>
-              <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end', marginTop: '4px' }}>
-                {achievements.map((a, i) => (
-                  <span
-                    key={i}
-                    data-tooltip={`${a.name}\n${a.description}`}
-                    style={{ fontSize: '1.2rem' }}
-                  >
-                    {a.badge}
-                  </span>
-                ))}
-              </div>
             </div>
+            {/* User Menu */}
             <div style={{ position: 'relative' }}>
-              <button
-                onClick={() => setShowMenu(!showMenu)}
-                style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  padding: '0.6rem 1rem',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontSize: '1.2rem',
-                  transition: 'all 0.2s'
-                }}
-              >
-                {user.avatarEmoji || '👤'}
-                <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{showMenu ? '▲' : '▼'}</span>
+              <button onClick={() => setShowMenu(!showMenu)} style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.6rem 1rem', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.2rem' }}>
+                {user.avatarEmoji || '👤'} <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{showMenu ? '▲' : '▼'}</span>
               </button>
-
               {showMenu && (
                 <>
-                  <div
-                    style={{ position: 'fixed', inset: 0, zIndex: 90 }}
-                    onClick={() => setShowMenu(false)}
-                  />
-                  <div style={{
-                    position: 'absolute',
-                    top: 'calc(100% + 10px)',
-                    right: 0,
-                    background: '#242424',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: '12px',
-                    padding: '8px',
-                    width: '200px',
-                    zIndex: 100,
-                    boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '4px'
-                  }}>
-                    <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(255,255,255,0.05)', marginBottom: '4px' }}>
-                      <div style={{ fontSize: '0.7rem', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Account</div>
-                      <div style={{ fontWeight: 'bold', fontSize: '0.9rem' }}>{user.displayName || user.username}</div>
-                    </div>
-                    {isAdmin && (
-                      <button
-                        onClick={() => { setView('admin'); setShowMenu(false); }}
-                        style={{ background: 'transparent', textAlign: 'left', padding: '10px 12px', fontSize: '0.9rem', color: '#a0aec0' }}
-                        onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
-                        onMouseOut={(e) => e.target.style.background = 'transparent'}
-                      >
-                        🛡️ Admin Dashboard
-                      </button>
-                    )}
-                    <button
-                      onClick={() => { setView('social'); setShowMenu(false); }}
-                      style={{ background: 'transparent', textAlign: 'left', padding: '10px 12px', fontSize: '0.9rem' }}
-                      onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
-                      onMouseOut={(e) => e.target.style.background = 'transparent'}
-                    >
-                      👥 Social Hub
-                    </button>
-                    <button
-                      onClick={() => { setView('leaderboard'); setShowMenu(false); }}
-                      style={{ background: 'transparent', textAlign: 'left', padding: '10px 12px', fontSize: '0.9rem' }}
-                      onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
-                      onMouseOut={(e) => e.target.style.background = 'transparent'}
-                    >
-                      🏆 Rankings
-                    </button>
-                    <button
-                      onClick={() => { setShowHelp(true); setShowMenu(false); }}
-                      style={{ background: 'transparent', textAlign: 'left', padding: '10px 12px', fontSize: '0.9rem' }}
-                      onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
-                      onMouseOut={(e) => e.target.style.background = 'transparent'}
-                    >
-                      ❓ Help & Guide
-                    </button>
+                  <div style={{ position: 'fixed', inset: 0, zIndex: 90 }} onClick={() => setShowMenu(false)} />
+                  <div style={{ position: 'absolute', top: 'calc(100% + 10px)', right: 0, background: '#242424', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '8px', width: '200px', zIndex: 100, boxShadow: '0 10px 25px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <button onClick={() => { setView('social'); setShowMenu(false); }} style={{ background: 'transparent', textAlign: 'left', padding: '10px 12px', fontSize: '0.9rem' }}>👥 Social Hub</button>
+                    <button onClick={() => { setView('leaderboard'); setShowMenu(false); }} style={{ background: 'transparent', textAlign: 'left', padding: '10px 12px', fontSize: '0.9rem' }}>🏆 Rankings</button>
+                    <button onClick={() => { setShowHelp(true); setShowMenu(false); }} style={{ background: 'transparent', textAlign: 'left', padding: '10px 12px', fontSize: '0.9rem' }}>❓ Help</button>
+                    {isAdmin && <button onClick={() => { setView('admin'); setShowMenu(false); }} style={{ background: 'transparent', textAlign: 'left', padding: '10px 12px', fontSize: '0.9rem', color: '#a0aec0' }}>🛡️ Admin</button>}
                     <div style={{ height: '1px', background: 'rgba(255,255,255,0.05)', margin: '4px 0' }} />
-                    <button
-                      onClick={handleLogout}
-                      style={{ background: 'transparent', textAlign: 'left', padding: '10px 12px', fontSize: '0.9rem', color: '#ff6b6b' }}
-                      onMouseOver={(e) => e.target.style.background = 'rgba(255,107,107,0.1)'}
-                      onMouseOut={(e) => e.target.style.background = 'transparent'}
-                    >
-                      🚪 Logout
-                    </button>
+                    <button onClick={handleLogout} style={{ background: 'transparent', textAlign: 'left', padding: '10px 12px', fontSize: '0.9rem', color: '#ff6b6b' }}>🚪 Logout</button>
                   </div>
                 </>
               )}
@@ -395,21 +361,11 @@ function App() {
       </div>
 
       {showHelp && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 100,
-          display: 'flex', alignItems: 'center', justifyContent: 'center'
-        }}>
-          <div style={{
-            background: '#242424', padding: '2rem', borderRadius: '12px', maxWidth: '500px',
-            border: '1px solid rgba(255,255,255,0.1)', position: 'relative'
-          }}>
-            <h2 style={{ marginTop: 0 }}>🏆 How to Play</h2>
-            <ul style={{ lineHeight: '1.6', paddingLeft: '1.2rem' }}>
-              <li><strong>Play Games:</strong> Earn XP by playing any game in the library.</li>
-              <li><strong>Scoring:</strong> Higher scores in games = more XP.</li>
-              <li><strong>Level Up:</strong> You gain a Level for every <strong>1000 XP</strong>.</li>
-            </ul>
-            <button onClick={() => setShowHelp(false)} style={{ marginTop: '1rem', width: '100%' }}>Got it!</button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ background: '#242424', padding: '2rem', borderRadius: '12px', maxWidth: '500px', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <h2>How to Play</h2>
+            <p>Earn XP by playing games. Level up every 1000 XP.</p>
+            <button onClick={() => setShowHelp(false)}>Got it!</button>
           </div>
         </div>
       )}

@@ -1,6 +1,6 @@
 package com.example.backend.controller;
 
-import com.example.backend.entity.UnoRoom;
+import com.example.backend.entity.GameRoom;
 import com.example.backend.entity.User;
 import com.example.backend.service.UnoRoomService;
 import com.example.backend.service.UserService;
@@ -28,7 +28,7 @@ public class UnoRoomController {
         try {
             User user = userService.findByUsername(auth.getName()).orElseThrow();
             int maxPlayers = body.getOrDefault("maxPlayers", 4);
-            UnoRoom room = unoRoomService.createRoom(user, maxPlayers);
+            GameRoom room = unoRoomService.createRoom(user, maxPlayers);
             return ResponseEntity.ok(room);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -39,7 +39,7 @@ public class UnoRoomController {
     @GetMapping("/rooms/{roomId}")
     public ResponseEntity<?> getRoom(@PathVariable Long roomId, Authentication auth) {
         try {
-            UnoRoom room = unoRoomService.getRoom(roomId);
+            GameRoom room = unoRoomService.getRoom(roomId);
             if (room == null) {
                 return ResponseEntity.notFound().build();
             }
@@ -53,7 +53,7 @@ public class UnoRoomController {
     @GetMapping("/rooms/code/{inviteCode}")
     public ResponseEntity<?> getRoomByCode(@PathVariable String inviteCode, Authentication auth) {
         try {
-            UnoRoom room = unoRoomService.getRoomByInviteCode(inviteCode);
+            GameRoom room = unoRoomService.getRoomByInviteCode(inviteCode);
             if (room == null) {
                 return ResponseEntity.notFound().build();
             }
@@ -68,7 +68,7 @@ public class UnoRoomController {
     public ResponseEntity<?> joinRoom(@PathVariable String inviteCode, Authentication auth) {
         try {
             User user = userService.findByUsername(auth.getName()).orElseThrow();
-            UnoRoom room = unoRoomService.joinRoom(inviteCode, user);
+            GameRoom room = unoRoomService.joinRoom(inviteCode, user);
             return ResponseEntity.ok(room);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -80,7 +80,7 @@ public class UnoRoomController {
     public ResponseEntity<?> leaveRoom(@PathVariable Long roomId, Authentication auth) {
         try {
             User user = userService.findByUsername(auth.getName()).orElseThrow();
-            UnoRoom room = unoRoomService.leaveRoom(roomId, user);
+            GameRoom room = unoRoomService.leaveRoom(roomId, user);
             if (room == null) {
                 return ResponseEntity.ok(Map.of("message", "Room closed"));
             }
@@ -95,7 +95,7 @@ public class UnoRoomController {
     public ResponseEntity<?> startGame(@PathVariable Long roomId, Authentication auth) {
         try {
             User user = userService.findByUsername(auth.getName()).orElseThrow();
-            UnoRoom room = unoRoomService.startGame(roomId, user);
+            GameRoom room = unoRoomService.startGame(roomId, user);
             return ResponseEntity.ok(room);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -112,7 +112,7 @@ public class UnoRoomController {
             User user = userService.findByUsername(auth.getName()).orElseThrow();
             String cardId = body.get("cardId");
             String chosenColor = body.get("chosenColor");
-            UnoRoom room = unoRoomService.playCard(roomId, user, cardId, chosenColor);
+            GameRoom room = unoRoomService.playCard(roomId, user, cardId, chosenColor);
             return ResponseEntity.ok(room);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -124,7 +124,7 @@ public class UnoRoomController {
     public ResponseEntity<?> drawCard(@PathVariable Long roomId, Authentication auth) {
         try {
             User user = userService.findByUsername(auth.getName()).orElseThrow();
-            UnoRoom room = unoRoomService.drawCard(roomId, user);
+            GameRoom room = unoRoomService.drawCard(roomId, user);
             return ResponseEntity.ok(room);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -136,19 +136,19 @@ public class UnoRoomController {
     public ResponseEntity<?> getMyRooms(Authentication auth) {
         try {
             User user = userService.findByUsername(auth.getName()).orElseThrow();
-            List<UnoRoom> rooms = unoRoomService.getUserActiveRooms(user);
+            List<GameRoom> rooms = unoRoomService.getUserActiveRooms(user);
             return ResponseEntity.ok(rooms);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-    // Play again - restart game with same players
+    // Play again
     @PostMapping("/rooms/{roomId}/play-again")
     public ResponseEntity<?> playAgain(@PathVariable Long roomId, Authentication auth) {
         try {
             User user = userService.findByUsername(auth.getName()).orElseThrow();
-            UnoRoom room = unoRoomService.playAgain(roomId, user);
+            GameRoom room = unoRoomService.playAgain(roomId, user);
             return ResponseEntity.ok(room);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

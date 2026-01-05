@@ -11,35 +11,37 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "uno_rooms")
-public class UnoRoom {
+@Table(name = "game_rooms")
+public class GameRoom {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(unique = true, nullable = false)
-    private String inviteCode; // 6-character unique code for joining
+    private String inviteCode; // 6-character unique code
+
+    @Column(nullable = false)
+    private String gameType; // UNO, CHECKERS, CHESS, etc.
 
     @ManyToOne
     @JoinColumn(name = "host_id")
-    private User host; // The room creator
+    private User host; // Room creator
 
     @Column(columnDefinition = "TEXT")
-    private String players; // JSON array of player objects: [{username, displayName, joinedAt}]
+    private String players; // JSON: [{username, displayName, avatar, isHost, ...}]
 
     @Column(columnDefinition = "TEXT")
-    private String gameState; // JSON: {hands:{}, deck:[], discardPile:[], currentColor, turn, direction,
-                              // winners:[]}
+    private String gameState; // Game-specific JSON state
 
     private String status; // WAITING, PLAYING, FINISHED
-    private Integer maxPlayers; // 2-6
-    private Integer currentPlayerIndex; // Index of current player's turn
-    private String currentPlayerUsername; // Username of current player
+    private Integer maxPlayers;
+    private Integer currentPlayerIndex;
+    private String currentPlayerUsername;
 
     @Column(columnDefinition = "TEXT")
-    private String sessionWins; // JSON: {username: winCount, ...}
+    private String sessionWins; // JSON: {username: count}
 
-    private Integer gamesPlayed; // Number of games played in this session
+    private Integer gamesPlayed;
 
     private LocalDateTime createdAt;
     private LocalDateTime lastActivityAt;

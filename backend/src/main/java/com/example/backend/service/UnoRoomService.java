@@ -1,8 +1,8 @@
 package com.example.backend.service;
 
-import com.example.backend.entity.UnoRoom;
+import com.example.backend.entity.GameRoom;
 import com.example.backend.entity.User;
-import com.example.backend.repository.UnoRoomRepository;
+import com.example.backend.repository.GameRoomRepository;
 import com.example.backend.repository.UserRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -19,136 +19,44 @@ import java.util.*;
 public class UnoRoomService {
 
     @Autowired
-    private UnoRoomRepository unoRoomRepository;
+    private GameRoomRepository gameRoomRepository;
 
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private RoomService roomService; // Use RoomService for generic operations
+
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private static final String INVITE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    private final SecureRandom random = new SecureRandom();
 
     // Create a new UNO room
+    // Delegating to RoomService or implementing here?
+    // Implementing here using RoomService logic to ensure specific consistency or
+    // just delegate.
     @Transactional
-    public UnoRoom createRoom(User host, int maxPlayers) {
+    public GameRoom createRoom(User host, int maxPlayers) throws Exception {
         if (maxPlayers < 2 || maxPlayers > 6) {
             throw new RuntimeException("UNO requires 2-6 players");
         }
-
-        UnoRoom room = new UnoRoom();
-        room.setHost(host);
-        room.setInviteCode(generateInviteCode());
-        room.setStatus("WAITING");
-        room.setMaxPlayers(maxPlayers);
-        room.setLastActivityAt(LocalDateTime.now());
-
-        // Initialize players with host
-        List<Map<String, Object>> players = new ArrayList<>();
-        Map<String, Object> hostPlayer = new HashMap<>();
-        hostPlayer.put("username", host.getUsername());
-        hostPlayer.put("displayName", host.getDisplayName() != null ? host.getDisplayName() : host.getUsername());
-        hostPlayer.put("joinedAt", LocalDateTime.now().toString());
-        hostPlayer.put("isHost", true);
-        players.add(hostPlayer);
-
-        try {
-            room.setPlayers(objectMapper.writeValueAsString(players));
-            room.setSessionWins(objectMapper.writeValueAsString(new HashMap<String, Integer>()));
-            room.setGamesPlayed(0);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Failed to serialize players");
-        }
-
-        return unoRoomRepository.save(room);
-    }
-
-    // Generate unique 6-character invite code
-    private String generateInviteCode() {
-        String code;
-        do {
-            StringBuilder sb = new StringBuilder(6);
-            for (int i = 0; i < 6; i++) {
-                sb.append(INVITE_CHARS.charAt(random.nextInt(INVITE_CHARS.length())));
-            }
-            code = sb.toString();
-        } while (unoRoomRepository.findByInviteCode(code).isPresent());
-        return code;
+        return roomService.createRoom(host, "UNO", maxPlayers);
     }
 
     // Join a room by invite code
     @Transactional
-    public UnoRoom joinRoom(String inviteCode, User user) throws JsonProcessingException {
-        UnoRoom room = unoRoomRepository.findByInviteCode(inviteCode.toUpperCase())
-                .orElseThrow(() -> new RuntimeException("Room not found"));
-
-        if (!"WAITING".equals(room.getStatus())) {
-            throw new RuntimeException("Game has already started");
-        }
-
-        List<Map<String, Object>> players = objectMapper.readValue(
-                room.getPlayers(), new TypeReference<List<Map<String, Object>>>() {
-                });
-
-        // Check if already in room
-        boolean alreadyJoined = players.stream()
-                .anyMatch(p -> user.getUsername().equals(p.get("username")));
-        if (alreadyJoined) {
-            return room; // Already in, just return current state
-        }
-
-        if (players.size() >= room.getMaxPlayers()) {
-            throw new RuntimeException("Room is full");
-        }
-
-        // Add player
-        Map<String, Object> newPlayer = new HashMap<>();
-        newPlayer.put("username", user.getUsername());
-        newPlayer.put("displayName", user.getDisplayName() != null ? user.getDisplayName() : user.getUsername());
-        newPlayer.put("joinedAt", LocalDateTime.now().toString());
-        newPlayer.put("isHost", false);
-        players.add(newPlayer);
-
-        room.setPlayers(objectMapper.writeValueAsString(players));
-        room.setLastActivityAt(LocalDateTime.now());
-        return unoRoomRepository.save(room);
+    public GameRoom joinRoom(String inviteCode, User user) throws Exception {
+        return roomService.joinRoom(inviteCode, user);
     }
 
     // Leave a room
     @Transactional
-    public UnoRoom leaveRoom(Long roomId, User user) throws JsonProcessingException {
-        UnoRoom room = unoRoomRepository.findById(roomId)
-                .orElseThrow(() -> new RuntimeException("Room not found"));
-
-        List<Map<String, Object>> players = objectMapper.readValue(
-                room.getPlayers(), new TypeReference<List<Map<String, Object>>>() {
-                });
-
-        players.removeIf(p -> user.getUsername().equals(p.get("username")));
-
-        // If host leaves, either transfer or close room
-        if (room.getHost().getUsername().equals(user.getUsername())) {
-            if (players.isEmpty()) {
-                unoRoomRepository.delete(room);
-                return null;
-            }
-            // Transfer host to next player
-            String newHostUsername = (String) players.get(0).get("username");
-            User newHost = userRepository.findByUsername(newHostUsername).orElse(null);
-            if (newHost != null) {
-                room.setHost(newHost);
-                players.get(0).put("isHost", true);
-            }
-        }
-
-        room.setPlayers(objectMapper.writeValueAsString(players));
-        room.setLastActivityAt(LocalDateTime.now());
-        return unoRoomRepository.save(room);
+    public GameRoom leaveRoom(Long roomId, User user) throws Exception {
+        return roomService.leaveRoom(roomId, user);
     }
 
     // Start the game
     @Transactional
-    public UnoRoom startGame(Long roomId, User user) throws JsonProcessingException {
-        UnoRoom room = unoRoomRepository.findById(roomId)
+    public GameRoom startGame(Long roomId, User user) throws JsonProcessingException {
+        GameRoom room = gameRoomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Room not found"));
 
         if (!room.getHost().getUsername().equals(user.getUsername())) {
@@ -159,7 +67,7 @@ public class UnoRoomService {
                 room.getPlayers(), new TypeReference<List<Map<String, Object>>>() {
                 });
 
-        if (players.size() < 1) {
+        if (players.size() < 1) { // Keeping 1 for testing
             throw new RuntimeException("Need at least 1 player to start");
         }
 
@@ -171,7 +79,15 @@ public class UnoRoomService {
         room.setCurrentPlayerUsername((String) players.get(0).get("username"));
         room.setLastActivityAt(LocalDateTime.now());
 
-        return unoRoomRepository.save(room);
+        // Initialize session stats if not present (should be by createRoom)
+        if (room.getSessionWins() == null) {
+            room.setSessionWins("{}");
+        }
+        if (room.getGamesPlayed() == null) {
+            room.setGamesPlayed(0);
+        }
+
+        return gameRoomRepository.save(room);
     }
 
     // Initialize UNO game state
@@ -188,7 +104,8 @@ public class UnoRoomService {
             String username = (String) player.get("username");
             List<Map<String, Object>> hand = new ArrayList<>();
             for (int i = 0; i < 7; i++) {
-                hand.add(deck.remove(deck.size() - 1));
+                if (!deck.isEmpty())
+                    hand.add(deck.remove(deck.size() - 1));
             }
             hands.put(username, hand);
         }
@@ -197,7 +114,7 @@ public class UnoRoomService {
         Map<String, Object> startCard;
         do {
             startCard = deck.remove(deck.size() - 1);
-        } while ("Black".equals(startCard.get("color")));
+        } while ("Black".equals(startCard.get("color")) && !deck.isEmpty());
 
         List<Map<String, Object>> discardPile = new ArrayList<>();
         discardPile.add(startCard);
@@ -252,8 +169,8 @@ public class UnoRoomService {
 
     // Play a card
     @Transactional
-    public UnoRoom playCard(Long roomId, User user, String cardId, String chosenColor) throws JsonProcessingException {
-        UnoRoom room = unoRoomRepository.findById(roomId)
+    public GameRoom playCard(Long roomId, User user, String cardId, String chosenColor) throws JsonProcessingException {
+        GameRoom room = gameRoomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Room not found"));
 
         if (!"PLAYING".equals(room.getStatus())) {
@@ -395,13 +312,13 @@ public class UnoRoomService {
         room.setCurrentPlayerUsername((String) players.get(nextIndex).get("username"));
         room.setLastActivityAt(LocalDateTime.now());
 
-        return unoRoomRepository.save(room);
+        return gameRoomRepository.save(room);
     }
 
     // Draw a card
     @Transactional
-    public UnoRoom drawCard(Long roomId, User user) throws JsonProcessingException {
-        UnoRoom room = unoRoomRepository.findById(roomId)
+    public GameRoom drawCard(Long roomId, User user) throws JsonProcessingException {
+        GameRoom room = gameRoomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Room not found"));
 
         if (!"PLAYING".equals(room.getStatus())) {
@@ -432,7 +349,7 @@ public class UnoRoomService {
         room.setCurrentPlayerUsername((String) players.get(nextIndex).get("username"));
         room.setLastActivityAt(LocalDateTime.now());
 
-        return unoRoomRepository.save(room);
+        return gameRoomRepository.save(room);
     }
 
     @SuppressWarnings("unchecked")
@@ -474,24 +391,24 @@ public class UnoRoomService {
     }
 
     // Get room by ID
-    public UnoRoom getRoom(Long roomId) {
-        return unoRoomRepository.findById(roomId).orElse(null);
+    public GameRoom getRoom(Long roomId) {
+        return gameRoomRepository.findById(roomId).orElse(null);
     }
 
     // Get room by invite code
-    public UnoRoom getRoomByInviteCode(String code) {
-        return unoRoomRepository.findByInviteCode(code.toUpperCase()).orElse(null);
+    public GameRoom getRoomByInviteCode(String code) {
+        return gameRoomRepository.findByInviteCode(code.toUpperCase()).orElse(null);
     }
 
     // Get user's active rooms
-    public List<UnoRoom> getUserActiveRooms(User user) {
-        return unoRoomRepository.findRoomsContainingPlayer(user.getUsername());
+    public List<GameRoom> getUserActiveRooms(User user) {
+        return gameRoomRepository.findActiveRoomsByPlayer(user.getUsername());
     }
 
-    // Play again - reset game state but keep players and session stats
+    // Play again
     @Transactional
-    public UnoRoom playAgain(Long roomId, User user) throws JsonProcessingException {
-        UnoRoom room = unoRoomRepository.findById(roomId)
+    public GameRoom playAgain(Long roomId, User user) throws JsonProcessingException {
+        GameRoom room = gameRoomRepository.findById(roomId)
                 .orElseThrow(() -> new RuntimeException("Room not found"));
 
         if (!room.getHost().getUsername().equals(user.getUsername())) {
@@ -514,6 +431,6 @@ public class UnoRoomService {
         room.setCurrentPlayerUsername((String) players.get(0).get("username"));
         room.setLastActivityAt(LocalDateTime.now());
 
-        return unoRoomRepository.save(room);
+        return gameRoomRepository.save(room);
     }
 }
