@@ -60,6 +60,17 @@ const ConnectFour = ({ onFinish, highScore, matchId }) => {
                 setCurrentPlayer(YELLOW);
             }
 
+            // Detect replay/restart
+            if (data.status === 'ACTIVE' && (winner || replayRequested)) {
+                setWinner(null);
+                setWinningCells([]);
+                setReplayRequested(false);
+                setScore(0); // Reset score or keep? Normally reset for new game? Replay usually implies new game.
+                // Keep history? No.
+                setHistory([]);
+                // Do NOT reset localHighScore
+            }
+
             if (data.status === 'FORFEITED' && data.currentTurn === currentUser.username && !winner) {
                 GameService.submitScore('connectfour', 300).then(user => {
                     setWinner(data.player1.username === currentUser.username ? RED : YELLOW);
@@ -386,6 +397,18 @@ const ConnectFour = ({ onFinish, highScore, matchId }) => {
         setLastUpdatedUser(null);
     };
 
+    const [replayRequested, setReplayRequested] = useState(false);
+
+    const handleReplay = async () => {
+        if (!matchId) return;
+        try {
+            await MatchService.requestReplay(matchId);
+            setReplayRequested(true);
+        } catch (error) {
+            console.error('Error requesting replay:', error);
+        }
+    };
+
     const handleUndo = () => {
         if (isMultiplayer || history.length === 0 || winner || isAIThinking) return;
 
@@ -534,6 +557,62 @@ const ConnectFour = ({ onFinish, highScore, matchId }) => {
                 </div>
             </div>
 
+            {/* Player Names */}
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                width: '100%',
+                maxWidth: '534px',
+                marginTop: '15px',
+                gap: '20px'
+            }}>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    background: currentPlayer === RED && !winner ? 'rgba(255, 68, 68, 0.2)' : 'rgba(0,0,0,0.3)',
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    border: currentPlayer === RED && !winner ? '2px solid #ff4444' : '2px solid transparent',
+                    transition: 'all 0.3s',
+                    flex: 1
+                }}>
+                    <div style={{
+                        width: '25px',
+                        height: '25px',
+                        borderRadius: '50%',
+                        background: 'radial-gradient(circle at 30% 30%, #ff6666, #cc0000)',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                    }} />
+                    <span style={{ fontWeight: 'bold', fontSize: '16px' }}>
+                        {isMultiplayer && match ? match.player1.username : 'You'}
+                    </span>
+                </div>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    background: currentPlayer === YELLOW && !winner ? 'rgba(255, 221, 0, 0.2)' : 'rgba(0,0,0,0.3)',
+                    padding: '10px 20px',
+                    borderRadius: '10px',
+                    border: currentPlayer === YELLOW && !winner ? '2px solid #ffdd00' : '2px solid transparent',
+                    transition: 'all 0.3s',
+                    flex: 1,
+                    justifyContent: 'flex-end'
+                }}>
+                    <span style={{ fontWeight: 'bold', fontSize: '16px' }}>
+                        {isMultiplayer && match ? match.player2.username : 'AI'}
+                    </span>
+                    <div style={{
+                        width: '25px',
+                        height: '25px',
+                        borderRadius: '50%',
+                        background: 'radial-gradient(circle at 30% 30%, #ffff66, #ccaa00)',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+                    }} />
+                </div>
+            </div>
+
             {/* Scores */}
             <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
                 <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px 25px', borderRadius: '10px', textAlign: 'center' }}>
@@ -596,7 +675,32 @@ const ConnectFour = ({ onFinish, highScore, matchId }) => {
                     </h2>
                     {score > 0 && <p style={{ fontSize: '1.2rem', margin: '1rem 0' }}>Score: {score}</p>}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                        <button onClick={resetGame} style={{ padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px' }}>New Game</button>
+                        {isMultiplayer ? (
+                            <>
+                                <button
+                                    onClick={handleReplay}
+                                    disabled={replayRequested}
+                                    style={{
+                                        padding: '12px 24px',
+                                        fontSize: '1.1rem',
+                                        cursor: replayRequested ? 'default' : 'pointer',
+                                        background: replayRequested ? '#888' : '#4CAF50',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '6px'
+                                    }}
+                                >
+                                    {replayRequested ? 'Waiting for opponent...' : 'Play Again'}
+                                </button>
+                                {match && (match.player1Replay || match.player2Replay) && !replayRequested && (
+                                    <div style={{ color: '#4CAF50', fontWeight: 'bold' }}>
+                                        Opponent wants to play again!
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <button onClick={resetGame} style={{ padding: '12px 24px', fontSize: '1.1rem', cursor: 'pointer', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px' }}>New Game</button>
+                        )}
                         <button onClick={() => onFinish(lastUpdatedUser)} style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#555', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Back to Library</button>
                     </div>
                 </div>

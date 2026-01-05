@@ -17,7 +17,27 @@ export default function TicTacToeMultiplayer({ room, onFinish }) {
     const [gameState, setGameState] = useState(room ? JSON.parse(room.gameState) : null);
     const [board, setBoard] = useState(gameState?.board || Array(9).fill(null));
     const [players, setPlayers] = useState(gameState?.players || {});
+    const [replayRequested, setReplayRequested] = useState(false);
+    const [sessionWins, setSessionWins] = useState(room?.sessionWins ? JSON.parse(room.sessionWins) : {});
     const pollInterval = useRef(null);
+
+    // Detect restart
+    useEffect(() => {
+        if (gameState && !gameState.winner && replayRequested) {
+            setReplayRequested(false);
+        }
+    }, [gameState]);
+
+    const handleReplay = async () => {
+        try {
+            setReplayRequested(true);
+            await TicTacToeRoomService.requestReplay(room.id);
+        } catch (error) {
+            console.error(error);
+            setReplayRequested(false);
+            alert("Failed to request replay");
+        }
+    };
 
     useEffect(() => {
         if (room && room.gameState) {
@@ -25,6 +45,9 @@ export default function TicTacToeMultiplayer({ room, onFinish }) {
             setGameState(parsed);
             setBoard(parsed.board);
             setPlayers(parsed.players);
+            if (room.sessionWins) {
+                setSessionWins(JSON.parse(room.sessionWins));
+            }
         }
     }, [room]);
 
@@ -38,6 +61,9 @@ export default function TicTacToeMultiplayer({ room, onFinish }) {
                         setGameState(parsed);
                         setBoard(parsed.board);
                         setPlayers(parsed.players);
+                    }
+                    if (updatedRoom.sessionWins) {
+                        setSessionWins(JSON.parse(updatedRoom.sessionWins));
                     }
                 } catch (e) {
                     console.error("Poll error", e);
@@ -116,6 +142,12 @@ export default function TicTacToeMultiplayer({ room, onFinish }) {
         <div style={{ textAlign: 'center', userSelect: 'none', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <button onClick={() => onFinish(null)} style={{ marginBottom: '1rem', background: '#444', border: 'none', color: 'white', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer', alignSelf: 'flex-start' }}>Exit</button>
 
+            <div style={{ position: 'absolute', top: 20, right: 20, textAlign: 'right', background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '8px' }}>
+                <h3 style={{ margin: '0 0 5px 0', fontSize: '1rem', opacity: 0.9 }}>Session Score</h3>
+                <div style={{ color: '#667eea', fontWeight: 'bold' }}>{players[X]}: {sessionWins[players[X]] || 0}</div>
+                <div style={{ color: '#ff6b6b', fontWeight: 'bold' }}>{players[O]}: {sessionWins[players[O]] || 0}</div>
+            </div>
+
             <h2 style={{ color: isMyTurn() && !gameState.winner ? '#4CAF50' : 'white' }}>{getStatusMessage()}</h2>
 
             <div style={{
@@ -151,7 +183,21 @@ export default function TicTacToeMultiplayer({ room, onFinish }) {
             </div>
 
             {gameState.winner && (
-                <div style={{ marginTop: '2rem' }}>
+                <div style={{ marginTop: '2rem', display: 'flex', gap: '10px' }}>
+                    <button
+                        onClick={handleReplay}
+                        disabled={replayRequested}
+                        style={{
+                            padding: '12px 24px',
+                            background: replayRequested ? '#888' : '#4CAF50',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: replayRequested ? 'default' : 'pointer'
+                        }}
+                    >
+                        {replayRequested ? 'Waiting for opponent...' : 'Play Again'}
+                    </button>
                     <button onClick={() => onFinish(null)} style={{ padding: '12px 24px', background: '#555', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Back to Library</button>
                 </div>
             )}

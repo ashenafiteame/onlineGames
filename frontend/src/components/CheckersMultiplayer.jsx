@@ -17,6 +17,7 @@ export default function CheckersMultiplayer({ room, onFinish }) {
     const [selected, setSelected] = useState(null);
     const [validMoves, setValidMoves] = useState([]);
     const [lastMove, setLastMove] = useState(null);
+    const [sessionWins, setSessionWins] = useState({});
     const pollInterval = useRef(null);
 
     // Initial load
@@ -37,14 +38,19 @@ export default function CheckersMultiplayer({ room, onFinish }) {
                     if (updatedRoom.gameState) {
                         const parsed = JSON.parse(updatedRoom.gameState);
                         setGameState(parsed);
-                        // Only update board if turn changed or it's not my turn (to avoid glitches while dragging/clicking)
-                        // Or just update always and hope React diffing handles it. 
-                        // Better: Update if turn changed or board changed significantly
                         setBoard(parsed.board);
                     }
+                    // Fetch session wins
+                    if (updatedRoom.sessionWins) {
+                        try {
+                            const wins = typeof updatedRoom.sessionWins === 'string'
+                                ? JSON.parse(updatedRoom.sessionWins)
+                                : updatedRoom.sessionWins;
+                            setSessionWins(wins);
+                        } catch (e) { /* ignore parse errors */ }
+                    }
                     if (updatedRoom.status === 'FINISHED') {
-                        // Check winner
-                        // handled in rendering usually
+                        // handled in rendering
                     }
                 } catch (e) {
                     console.error("Poll error", e);
@@ -76,35 +82,149 @@ export default function CheckersMultiplayer({ room, onFinish }) {
         return getMyColor() === WHITE_PLAYER;
     };
 
+    const isInternational = () => {
+        try {
+            const s = typeof room.settings === 'string' ? JSON.parse(room.settings) : room.settings;
+            return s && s.variant === 'international';
+        } catch (e) { return false; }
+    };
+
+    const isRussian = () => {
+        try {
+            const s = typeof room.settings === 'string' ? JSON.parse(room.settings) : room.settings;
+            return s && s.variant === 'russian';
+        } catch (e) { return false; }
+    };
+
+    // Flying Kings: Russian and International
+    const isFlyingKing = () => isRussian() || isInternational();
+    // Backward Capture for Men: Russian and International
+    const menCanCaptureBackward = () => isRussian() || isInternational();
+
+    const isOpponent = (myPiece, targetPiece) => {
+        if (isRed(myPiece)) return isWhite(targetPiece);
+        if (isWhite(myPiece)) return isRed(targetPiece);
+        return false;
+    };
+    const hasMandatoryCapture = () => isRussian() || isInternational();
+
     const getMoves = (r, c, b) => {
         const moves = [];
         const piece = b[r][c];
         if (piece === 0) return moves;
+        const size = b.length;
 
-        const directions = [];
-        if (isRed(piece) || isKing(piece)) {
-            directions.push([-1, -1], [-1, 1]);
-        }
-        if (isWhite(piece) || isKing(piece)) {
-            directions.push([1, -1], [1, 1]);
+        // Flying King Logic (Russian/International)
+        if (isKing(piece) && isFlyingKing()) {
+            const dirs = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+
+            // Moves (non-capture)
+            dirs.forEach(([dr, dc]) => {
+                let d = 1;
+                while (true) {
+                    const nr = r + dr * d;
+                    const nc = c + dc * d;
+                    if (nr < 0 || nr >= size || nc < 0 || nc >= size || b[nr][nc] !== 0) break;
+                    moves.push({ r: nr, c: nc, capture: null });
+                    d++;
+                }
+            });
+
+            // Captures
+            dirs.forEach(([dr, dc]) => {
+                let d = 1;
+                let foundOpponent = false;
+                let capturePos = null;
+                while (true) {
+                    const nr = r + dr * d;
+                    const nc = c + dc * d;
+                    if (nr < 0 || nr >= size || nc < 0 || nc >= size) break;
+
+                    const cell = b[nr][nc];
+                    if (cell === 0) {
+                        if (foundOpponent) {
+                            moves.push({ r: nr, c: nc, capture: capturePos });
+                        }
+                    } else {
+                        if (foundOpponent) break; // Cannot jump two pieces
+                        if (isOpponent(piece, cell)) {
+                            foundOpponent = true;
+                            capturePos = { r: nr, c: nc };
+                        } else {
+                            break; // Blocked by own piece
+                        }
+                    }
+                    d++;
+                }
+            });
+            return moves;
         }
 
-        directions.forEach(([dr, dc]) => {
+        // Standard Logic (or Non-Flying King)
+        const moveDirs = [];
+        const captureDirs = [];
+
+        if (isKing(piece)) {
+            // Standard King: 1 step any dir
+            const allDirs = [[-1, -1], [-1, 1], [1, -1], [1, 1]];
+            moveDirs.push(...allDirs);
+            captureDirs.push(...allDirs);
+        } else {
+            // Men
+            if (isRed(piece)) {
+                moveDirs.push([-1, -1], [-1, 1]); // fwd
+                captureDirs.push([-1, -1], [-1, 1]); // fwd
+                if (menCanCaptureBackward()) captureDirs.push([1, -1], [1, 1]); // bwd
+            } else if (isWhite(piece)) {
+                moveDirs.push([1, -1], [1, 1]); // fwd
+                captureDirs.push([1, -1], [1, 1]); // fwd
+                if (menCanCaptureBackward()) captureDirs.push([-1, -1], [-1, 1]); // bwd
+            }
+        }
+
+        // Apply Standard Moves
+        moveDirs.forEach(([dr, dc]) => {
             const nr = r + dr;
             const nc = c + dc;
-            if (nr >= 0 && nr < BOARD_SIZE && nc >= 0 && nc < BOARD_SIZE) {
-                if (b[nr][nc] === 0) {
-                    moves.push({ r: nr, c: nc, capture: null });
-                } else if ((isRed(piece) && isWhite(b[nr][nc])) || (isWhite(piece) && isRed(b[nr][nc]))) {
+            if (nr >= 0 && nr < size && nc >= 0 && nc < size && b[nr][nc] === 0) {
+                moves.push({ r: nr, c: nc, capture: null });
+            }
+        });
+
+        // Apply Standard Captures
+        captureDirs.forEach(([dr, dc]) => {
+            const nr = r + dr;
+            const nc = c + dc;
+            if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
+                if (isOpponent(piece, b[nr][nc])) {
                     const jr = nr + dr;
                     const jc = nc + dc;
-                    if (jr >= 0 && jr < BOARD_SIZE && jc >= 0 && jc < BOARD_SIZE && b[jr][jc] === 0) {
+                    if (jr >= 0 && jr < size && jc >= 0 && jc < size && b[jr][jc] === 0) {
                         moves.push({ r: jr, c: jc, capture: { r: nr, c: nc } });
                     }
                 }
             }
         });
+
         return moves;
+    };
+
+    // Check if any piece of given color has a capture available
+    const anyCaptureAvailable = (b, playerColor) => {
+        const size = b.length;
+        for (let r = 0; r < size; r++) {
+            for (let c = 0; c < size; c++) {
+                const piece = b[r][c];
+                if (piece === 0) continue;
+                const pieceIsPlayer = (playerColor === RED_PLAYER && isRed(piece)) ||
+                    (playerColor === WHITE_PLAYER && isWhite(piece));
+                if (pieceIsPlayer) {
+                    const pieceMoves = getMoves(r, c, b);
+                    if (pieceMoves.some(m => m.capture)) return true;
+                }
+            }
+        }
+        return false;
     };
 
     const handleSquareClick = (r, c) => {
@@ -122,8 +242,24 @@ export default function CheckersMultiplayer({ room, onFinish }) {
         const myColor = getMyColor();
         // Allow selecting own pieces
         if ((isRed(piece) && myColor === RED_PLAYER) || (isWhite(piece) && myColor === WHITE_PLAYER)) {
-            setSelected({ r, c });
-            setValidMoves(getMoves(r, c, board));
+            let moves = getMoves(r, c, board);
+
+            // Enforce mandatory capture: if any capture is available for this player, only allow captures
+            if (hasMandatoryCapture() && anyCaptureAvailable(board, myColor)) {
+                const thisHasCapture = moves.some(m => m.capture);
+                if (thisHasCapture) {
+                    moves = moves.filter(m => m.capture);
+                    setSelected({ r, c });
+                    setValidMoves(moves);
+                } else {
+                    // This piece has no capture but another does - can't select this piece
+                    setSelected(null);
+                    setValidMoves([]);
+                }
+            } else {
+                setSelected({ r, c });
+                setValidMoves(moves);
+            }
         } else {
             setSelected(null);
             setValidMoves([]);
@@ -133,27 +269,52 @@ export default function CheckersMultiplayer({ room, onFinish }) {
     const makeMove = async (fromR, fromC, toR, toC, capture) => {
         try {
             const newBoard = board.map(row => [...row]);
+            const size = newBoard.length;
             let piece = newBoard[fromR][fromC];
 
             // Kinging
             if (piece === RED_PLAYER && toR === 0) piece = RED_KING;
-            if (piece === WHITE_PLAYER && toR === BOARD_SIZE - 1) piece = WHITE_KING;
+            if (piece === WHITE_PLAYER && toR === size - 1) piece = WHITE_KING;
 
+            // Apply move
             newBoard[toR][toC] = piece;
             newBoard[fromR][fromC] = 0;
-
             if (capture) {
                 newBoard[capture.r][capture.c] = 0;
             }
 
-            // Check for multi-jump
-            // Note: backend expects next turn logic. Simplest is to handle logic here.
-            // If capture happened, check if same piece can capture again.
-            // But strict checkers rules say you MUST continue capturing.
-            // For simplicity, we'll allow turn switch unless multi-jump is enforced?
+            // Promotion Logic
+            let promoted = false;
+            // Red
+            if (piece === RED_PLAYER && toR === 0) {
+                piece = RED_KING; // Promote
+                newBoard[toR][toC] = piece;
+                promoted = true;
+            }
+            // White
+            if (piece === WHITE_PLAYER && toR === size - 1) {
+                piece = WHITE_KING; // Promote
+                newBoard[toR][toC] = piece;
+                promoted = true;
+            }
 
-            // Re-using logic from Checkers.jsx roughly
-            const possibleNextMoves = capture ? getMoves(toR, toC, newBoard).filter(m => m.capture) : [];
+            // Check for multi-jump
+            let possibleNextMoves = [];
+            if (capture) {
+                if (promoted) {
+                    if (isRussian()) {
+                        // Russian: Continue capturing as King
+                        possibleNextMoves = getMoves(toR, toC, newBoard).filter(m => m.capture);
+                    } else {
+                        // Standard/Intl: Promotion ends turn (or standard rule: stop)
+                        possibleNextMoves = [];
+                    }
+                } else {
+                    // Not promoted: continue capturing if possible
+                    possibleNextMoves = getMoves(toR, toC, newBoard).filter(m => m.capture);
+                }
+            }
+
             const multiJump = possibleNextMoves.length > 0;
 
             let nextTurn = gameState.turn;
@@ -310,7 +471,21 @@ export default function CheckersMultiplayer({ room, onFinish }) {
                     <h2 style={{ color: '#42d392', marginTop: 0 }}>
                         {getWinnerMessage()}
                     </h2>
-                    <button onClick={() => onFinish(null)} style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#555', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Back to Library</button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <button
+                            onClick={async () => {
+                                try {
+                                    await CheckersRoomService.requestReplay(room.id);
+                                } catch (err) {
+                                    console.error('Failed to request replay:', err);
+                                }
+                            }}
+                            style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+                        >
+                            Play Again
+                        </button>
+                        <button onClick={() => onFinish(null)} style={{ padding: '12px 24px', fontSize: '1.1rem', background: '#555', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Back to Library</button>
+                    </div>
                 </div>
             )}
         </div>

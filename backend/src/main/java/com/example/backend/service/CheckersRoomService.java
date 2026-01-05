@@ -43,18 +43,32 @@ public class CheckersRoomService {
             // user requested "multi player games"
         }
 
-        // Init Board (8x8) using integers to match frontend
+        // Check variant
+        boolean isInternational = false;
+        if (room.getSettings() != null) {
+            Map<String, Object> settings = objectMapper.readValue(
+                    room.getSettings() != null ? room.getSettings() : "{}",
+                    new TypeReference<Map<String, Object>>() {
+                    });
+            isInternational = "international".equals(settings.get("variant"));
+        }
+
+        int rows = isInternational ? 10 : 8;
+        int cols = isInternational ? 10 : 8;
+
+        // Init Board
         // 0=Empty, 1=Red, 2=White, 3=RedKing, 4=WhiteKing
         List<List<Integer>> board = new ArrayList<>();
-        for (int row = 0; row < 8; row++) {
+        for (int row = 0; row < rows; row++) {
             List<Integer> rowList = new ArrayList<>();
-            for (int col = 0; col < 8; col++) {
+            for (int col = 0; col < cols; col++) {
                 int piece = 0;
+                // Pieces are on dark squares (sum is odd if 0,0 is light)
                 if ((row + col) % 2 == 1) {
-                    if (row < 3)
-                        piece = 2; // White (Player 2)
-                    else if (row > 4)
-                        piece = 1; // Red (Player 1)
+                    if (row < (rows / 2) - 1)
+                        piece = 2; // White (Player 2 - Joiner)
+                    else if (row >= (rows / 2) + 1)
+                        piece = 1; // Red (Player 1 - Host)
                 }
                 rowList.add(piece);
             }
@@ -100,8 +114,7 @@ public class CheckersRoomService {
         // Trust client for now - they send the new board and next turn
         // In real app, validate move here.
 
-        // moveData = { board: [...], nextTurn: 'white'|'red', winner:
-        // 'red'|'white'|null }
+        // moveData = { board: [...], nextTurn: 1|2, winner: 1|2|null }
 
         Map<String, Object> currentGameState = objectMapper.readValue(
                 room.getGameState(), new TypeReference<Map<String, Object>>() {
@@ -109,37 +122,102 @@ public class CheckersRoomService {
 
         // Update board
         currentGameState.put("board", moveData.get("board"));
-        currentGameState.put("turn", moveData.get("nextTurn"));
+        Object nextTurnObj = moveData.get("nextTurn");
+        currentGameState.put("turn", nextTurnObj);
 
         if (moveData.containsKey("winner") && moveData.get("winner") != null) {
-            String colorWinner = (String) moveData.get("winner");
+            Object winnerObj = moveData.get("winner");
+            String colorWinner = String.valueOf(winnerObj);
+
             // Find username
             @SuppressWarnings("unchecked")
             Map<String, String> playersMap = (Map<String, String>) currentGameState.get("players");
             String usernameWinner = playersMap.get(colorWinner);
 
             room.setStatus("FINISHED");
+            currentGameState.put("winner", colorWinner); // Store winner in game state too
 
             // Session wins
             Map<String, Integer> wins = objectMapper.readValue(
                     room.getSessionWins() != null ? room.getSessionWins() : "{}",
                     new TypeReference<Map<String, Integer>>() {
                     });
-            wins.put(usernameWinner, wins.getOrDefault(usernameWinner, 0) + 1);
+            if (usernameWinner != null) {
+                wins.put(usernameWinner, wins.getOrDefault(usernameWinner, 0) + 1);
+            }
             room.setSessionWins(objectMapper.writeValueAsString(wins));
 
             room.setGamesPlayed(room.getGamesPlayed() != null ? room.getGamesPlayed() + 1 : 1);
         }
 
         // Update current player username based on color turn
-        String nextColor = (String) moveData.get("nextTurn");
-        @SuppressWarnings("unchecked")
-        Map<String, String> playersMap = (Map<String, String>) currentGameState.get("players");
-        if (nextColor != null) {
+        if (nextTurnObj != null) {
+            String nextColor = String.valueOf(nextTurnObj);
+            @SuppressWarnings("unchecked")
+            Map<String, String> playersMap = (Map<String, String>) currentGameState.get("players");
             room.setCurrentPlayerUsername(playersMap.get(nextColor));
         }
 
         room.setGameState(objectMapper.writeValueAsString(currentGameState));
+        room.setLastActivityAt(LocalDateTime.now());
+
+        return gameRoomRepository.save(room);
+    }
+
+    public GameRoom requestReplay(Long roomId, User user) throws Exception {
+        GameRoom room = gameRoomRepository.findById(roomId)
+                .orElseThrow(() -> new Exception("Room not found"));
+
+        if (!room.getStatus().equals("FINISHED")) {
+            throw new Exception("Game is not finished");
+        }
+
+        // Check variant
+        boolean isInternational = false;
+        if (room.getSettings() != null) {
+            Map<String, Object> settings = objectMapper.readValue(
+                    room.getSettings() != null ? room.getSettings() : "{}",
+                    new TypeReference<Map<String, Object>>() {
+                    });
+            isInternational = "international".equals(settings.get("variant"));
+        }
+
+        int rows = isInternational ? 10 : 8;
+        int cols = isInternational ? 10 : 8;
+
+        // Re-init Board
+        List<List<Integer>> board = new ArrayList<>();
+        for (int row = 0; row < rows; row++) {
+            List<Integer> rowList = new ArrayList<>();
+            for (int col = 0; col < cols; col++) {
+                int piece = 0;
+                if ((row + col) % 2 == 1) {
+                    if (row < (rows / 2) - 1)
+                        piece = 2; // White
+                    else if (row >= (rows / 2) + 1)
+                        piece = 1; // Red
+                }
+                rowList.add(piece);
+            }
+            board.add(rowList);
+        }
+
+        Map<String, Object> currentGameState = objectMapper.readValue(room.getGameState(),
+                new TypeReference<Map<String, Object>>() {
+                });
+
+        currentGameState.put("board", board);
+        currentGameState.put("turn", 1);
+        currentGameState.put("winner", null);
+        currentGameState.put("redCaptured", 0);
+        currentGameState.put("whiteCaptured", 0);
+
+        @SuppressWarnings("unchecked")
+        Map<String, String> playersMap = (Map<String, String>) currentGameState.get("players");
+
+        room.setGameState(objectMapper.writeValueAsString(currentGameState));
+        room.setStatus("PLAYING");
+        room.setCurrentPlayerUsername(playersMap.get("1")); // Red starts
         room.setLastActivityAt(LocalDateTime.now());
 
         return gameRoomRepository.save(room);

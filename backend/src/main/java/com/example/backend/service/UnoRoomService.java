@@ -126,6 +126,8 @@ public class UnoRoomService {
         gameState.put("direction", 1); // 1 = clockwise, -1 = counter-clockwise
         gameState.put("winners", new ArrayList<>());
         gameState.put("drawPending", 0);
+        gameState.put("hasDrawn", false); // Track if current player has drawn this turn
+        gameState.put("pendingPenalty", null); // { type: "Draw Two"|"Wild Draw Four", count: number }
 
         return gameState;
     }
@@ -226,6 +228,7 @@ public class UnoRoomService {
                 ? chosenColor
                 : (String) playedCard.get("color");
         gameState.put("currentColor", newColor);
+        gameState.put("hasDrawn", false); // Reset hasDrawn when a card is played
 
         int direction = (int) gameState.get("direction");
         List<Map<String, Object>> players = objectMapper.readValue(
@@ -248,14 +251,36 @@ public class UnoRoomService {
                 if (playerCount == 2)
                     skip = 1; // In 2-player, Reverse acts like Skip
                 break;
-            case "Draw Two":
-                drawAmount = 2;
-                skip = 1; // Skip their turn after they draw
+            case "Draw Two": {
+                // Stack the penalty instead of immediate draw
+                @SuppressWarnings("unchecked")
+                Map<String, Object> pending = (Map<String, Object>) gameState.get("pendingPenalty");
+                int existingCount = 0;
+                if (pending != null && "Draw Two".equals(pending.get("type"))) {
+                    existingCount = ((Number) pending.get("count")).intValue();
+                }
+                Map<String, Object> newPenalty = new HashMap<>();
+                newPenalty.put("type", "Draw Two");
+                newPenalty.put("count", existingCount + 2);
+                gameState.put("pendingPenalty", newPenalty);
+                // Don't skip - next player gets chance to stack
                 break;
-            case "Wild Draw Four":
-                drawAmount = 4;
-                skip = 1;
+            }
+            case "Wild Draw Four": {
+                // Stack the +4 penalty
+                @SuppressWarnings("unchecked")
+                Map<String, Object> pending = (Map<String, Object>) gameState.get("pendingPenalty");
+                int existingCount = 0;
+                if (pending != null && "Wild Draw Four".equals(pending.get("type"))) {
+                    existingCount = ((Number) pending.get("count")).intValue();
+                }
+                Map<String, Object> newPenalty = new HashMap<>();
+                newPenalty.put("type", "Wild Draw Four");
+                newPenalty.put("count", existingCount + 4);
+                gameState.put("pendingPenalty", newPenalty);
+                // Don't skip - next player gets chance to stack
                 break;
+            }
         }
 
         // Check for win
@@ -315,7 +340,7 @@ public class UnoRoomService {
         return gameRoomRepository.save(room);
     }
 
-    // Draw a card
+    // Draw a card - handles penalty stacking
     @Transactional
     public GameRoom drawCard(Long roomId, User user) throws JsonProcessingException {
         GameRoom room = gameRoomRepository.findById(roomId)
@@ -333,9 +358,106 @@ public class UnoRoomService {
                 room.getGameState(), new TypeReference<Map<String, Object>>() {
                 });
 
+        @SuppressWarnings("unchecked")
+        Map<String, Object> pendingPenalty = (Map<String, Object>) gameState.get("pendingPenalty");
+
+        // If penalty is pending, draw the accumulated cards
+        if (pendingPenalty != null) {
+            int penaltyCount = ((Number) pendingPenalty.get("count")).intValue();
+            drawCardsForPlayer(gameState, user.getUsername(), penaltyCount);
+            gameState.put("pendingPenalty", null);
+
+            // Move to next player
+            List<Map<String, Object>> players = objectMapper.readValue(
+                    room.getPlayers(), new TypeReference<List<Map<String, Object>>>() {
+                    });
+            int direction = (int) gameState.get("direction");
+            int playerCount = players.size();
+            int currentIndex = room.getCurrentPlayerIndex();
+            int nextIndex = (currentIndex + direction + playerCount) % playerCount;
+
+            room.setGameState(objectMapper.writeValueAsString(gameState));
+            room.setCurrentPlayerIndex(nextIndex);
+            room.setCurrentPlayerUsername((String) players.get(nextIndex).get("username"));
+            room.setLastActivityAt(LocalDateTime.now());
+            return gameRoomRepository.save(room);
+        }
+
+        // Check if player already drew this turn
+        Boolean hasDrawn = (Boolean) gameState.getOrDefault("hasDrawn", false);
+        if (Boolean.TRUE.equals(hasDrawn)) {
+            throw new RuntimeException("You have already drawn this turn. Play a card or pass.");
+        }
+
+        // Draw one card
         drawCardsForPlayer(gameState, user.getUsername(), 1);
 
-        // Move to next player
+        // Get the drawn card (last card in hand)
+        @SuppressWarnings("unchecked")
+        Map<String, List<Map<String, Object>>> hands = (Map<String, List<Map<String, Object>>>) gameState.get("hands");
+        List<Map<String, Object>> hand = hands.get(user.getUsername());
+        Map<String, Object> drawnCard = hand.get(hand.size() - 1);
+
+        // Get current state to check if drawn card is playable
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> discardPile = (List<Map<String, Object>>) gameState.get("discardPile");
+        Map<String, Object> topCard = discardPile.get(discardPile.size() - 1);
+        String currentColor = (String) gameState.get("currentColor");
+
+        boolean drawnCardPlayable = isValidMove(drawnCard, topCard, currentColor);
+
+        if (drawnCardPlayable) {
+            // Player can play the drawn card or pass - stay on turn
+            gameState.put("hasDrawn", true);
+            room.setGameState(objectMapper.writeValueAsString(gameState));
+            // Don't change turn
+        } else {
+            // Drawn card not playable - auto-pass to next player
+            gameState.put("hasDrawn", false);
+
+            List<Map<String, Object>> players = objectMapper.readValue(
+                    room.getPlayers(), new TypeReference<List<Map<String, Object>>>() {
+                    });
+            int direction = (int) gameState.get("direction");
+            int playerCount = players.size();
+            int currentIndex = room.getCurrentPlayerIndex();
+            int nextIndex = (currentIndex + direction + playerCount) % playerCount;
+
+            room.setGameState(objectMapper.writeValueAsString(gameState));
+            room.setCurrentPlayerIndex(nextIndex);
+            room.setCurrentPlayerUsername((String) players.get(nextIndex).get("username"));
+        }
+
+        room.setLastActivityAt(LocalDateTime.now());
+        return gameRoomRepository.save(room);
+    }
+
+    // Pass turn - only allowed after drawing a playable card
+    @Transactional
+    public GameRoom passTurn(Long roomId, User user) throws JsonProcessingException {
+        GameRoom room = gameRoomRepository.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("Room not found"));
+
+        if (!"PLAYING".equals(room.getStatus())) {
+            throw new RuntimeException("Game is not active");
+        }
+
+        if (!user.getUsername().equals(room.getCurrentPlayerUsername())) {
+            throw new RuntimeException("Not your turn");
+        }
+
+        Map<String, Object> gameState = objectMapper.readValue(
+                room.getGameState(), new TypeReference<Map<String, Object>>() {
+                });
+
+        Boolean hasDrawn = (Boolean) gameState.getOrDefault("hasDrawn", false);
+        if (!Boolean.TRUE.equals(hasDrawn)) {
+            throw new RuntimeException("You must draw a card before passing");
+        }
+
+        // Reset hasDrawn and move to next player
+        gameState.put("hasDrawn", false);
+
         List<Map<String, Object>> players = objectMapper.readValue(
                 room.getPlayers(), new TypeReference<List<Map<String, Object>>>() {
                 });
@@ -378,9 +500,27 @@ public class UnoRoomService {
     }
 
     private boolean isValidMove(Map<String, Object> card, Map<String, Object> topCard, String currentColor) {
+        return isValidMove(card, topCard, currentColor, null);
+    }
+
+    // Overloaded version with penalty stacking support
+    private boolean isValidMove(Map<String, Object> card, Map<String, Object> topCard, String currentColor,
+            Map<String, Object> pendingPenalty) {
         String cardColor = (String) card.get("color");
         String cardValue = (String) card.get("value");
         String topValue = (String) topCard.get("value");
+
+        // If there's a pending penalty, only allow matching penalty cards
+        if (pendingPenalty != null) {
+            String penaltyType = (String) pendingPenalty.get("type");
+            if ("Draw Two".equals(penaltyType) && "Draw Two".equals(cardValue)) {
+                return true; // Can stack +2 on +2
+            }
+            if ("Wild Draw Four".equals(penaltyType) && "Wild Draw Four".equals(cardValue)) {
+                return true; // Can stack +4 on +4
+            }
+            return false; // Must draw if can't stack
+        }
 
         // Wild cards can always be played
         if ("Black".equals(cardColor))

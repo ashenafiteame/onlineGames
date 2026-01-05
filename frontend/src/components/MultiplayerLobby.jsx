@@ -16,6 +16,7 @@ export default function MultiplayerLobby({ gameType, gameName, onStart, onBack, 
     const [inviteCode, setInviteCode] = useState(initialInviteCode || '');
     const [copied, setCopied] = useState(false);
     const [maxPlayers, setMaxPlayers] = useState(2);
+    const [checkersVariant, setCheckersVariant] = useState('standard');
 
     useEffect(() => {
         let interval;
@@ -41,7 +42,11 @@ export default function MultiplayerLobby({ gameType, gameName, onStart, onBack, 
     const handleCreateRoom = async () => {
         setError('');
         try {
-            const newRoom = await RoomService.createRoom(gameType, maxPlayers);
+            const settings = {};
+            if (gameType === 'checkers') {
+                settings.variant = checkersVariant;
+            }
+            const newRoom = await RoomService.createRoom(gameType, maxPlayers, settings);
             setRoom(newRoom);
             setMode('waiting');
         } catch (e) {
@@ -192,8 +197,51 @@ export default function MultiplayerLobby({ gameType, gameName, onStart, onBack, 
                     </div>
                 )}
 
-                {gameType !== 'uno' && (
+                {gameType !== 'uno' && gameType !== 'checkers' && (
                     <p style={{ color: '#aaa', fontStyle: 'italic' }}>2-Player Mode</p>
+                )}
+
+                {gameType === 'checkers' && (
+                    <div style={{ marginBottom: '2rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', color: '#888' }}>
+                            Variant
+                        </label>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                            <button
+                                onClick={() => setCheckersVariant('standard')}
+                                style={{
+                                    ...buttonStyle,
+                                    padding: '10px 16px',
+                                    background: checkersVariant === 'standard' ? '#e53935' : 'rgba(255,255,255,0.1)',
+                                    color: 'white'
+                                }}
+                            >
+                                Standard (8x8)
+                            </button>
+                            <button
+                                onClick={() => setCheckersVariant('international')}
+                                style={{
+                                    ...buttonStyle,
+                                    padding: '10px 16px',
+                                    background: checkersVariant === 'international' ? '#e53935' : 'rgba(255,255,255,0.1)',
+                                    color: 'white'
+                                }}
+                            >
+                                International (10x10)
+                            </button>
+                            <button
+                                onClick={() => setCheckersVariant('russian')}
+                                style={{
+                                    ...buttonStyle,
+                                    padding: '10px 16px',
+                                    background: checkersVariant === 'russian' ? '#e53935' : 'rgba(255,255,255,0.1)',
+                                    color: 'white'
+                                }}
+                            >
+                                Russian (8x8)
+                            </button>
+                        </div>
+                    </div>
                 )}
 
                 {error && <p style={{ color: '#ff6b6b' }}>{error}</p>}

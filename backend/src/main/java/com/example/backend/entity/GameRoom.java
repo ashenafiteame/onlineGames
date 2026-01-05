@@ -41,6 +41,9 @@ public class GameRoom {
     @Column(columnDefinition = "TEXT")
     private String sessionWins; // JSON: {username: count}
 
+    @Column(columnDefinition = "TEXT")
+    private String settings; // JSON: {variant: "standard", ...}
+
     private Integer gamesPlayed;
 
     private LocalDateTime createdAt;

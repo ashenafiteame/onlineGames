@@ -117,4 +117,45 @@ public class TicTacToeRoomService {
 
         return gameRoomRepository.save(room);
     }
+
+    @Transactional
+    public GameRoom requestReplay(Long roomId, User user) throws Exception {
+        GameRoom room = gameRoomRepository.findById(roomId)
+                .orElseThrow(() -> new RuntimeException("Room not found"));
+
+        Map<String, Object> currentGameState = objectMapper.readValue(
+                room.getGameState(), new TypeReference<Map<String, Object>>() {
+                });
+
+        if (currentGameState.get("winner") == null) {
+            throw new RuntimeException("Game is not over");
+        }
+
+        // Track replay requests
+        @SuppressWarnings("unchecked")
+        Map<String, Boolean> replayRequests = (Map<String, Boolean>) currentGameState.getOrDefault("replayRequests",
+                new HashMap<>());
+        replayRequests.put(user.getUsername(), true);
+        currentGameState.put("replayRequests", replayRequests);
+
+        // Check if both players requested (assuming 2 players)
+        @SuppressWarnings("unchecked")
+        Map<String, String> playersMap = (Map<String, String>) currentGameState.get("players");
+        if (replayRequests.size() >= 2 && replayRequests.containsKey(playersMap.get("X"))
+                && replayRequests.containsKey(playersMap.get("O"))) {
+
+            // Reset Game
+            List<String> board = new ArrayList<>(Collections.nCopies(9, null));
+            currentGameState.put("board", board);
+            currentGameState.put("winner", null);
+            currentGameState.put("turn", "X"); // X starts again
+            currentGameState.put("replayRequests", new HashMap<>()); // Clear requests
+
+            room.setStatus("PLAYING");
+            room.setLastActivityAt(LocalDateTime.now());
+        }
+
+        room.setGameState(objectMapper.writeValueAsString(currentGameState));
+        return gameRoomRepository.save(room);
+    }
 }

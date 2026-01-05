@@ -131,9 +131,23 @@ export default function UnoMultiplayer({ room: initialRoom, onFinish }) {
     const topCard = discardPile[discardPile.length - 1];
     const currentColor = gameState?.currentColor;
     const direction = gameState?.direction || 1;
+    const hasDrawn = gameState?.hasDrawn || false;
+    const pendingPenalty = gameState?.pendingPenalty; // { type, count }
 
     const isValidMove = (card) => {
         if (!topCard || !currentColor) return false;
+
+        // If there's a pending penalty, only allow matching penalty cards
+        if (pendingPenalty) {
+            if (pendingPenalty.type === 'Draw Two' && card.value === 'Draw Two') {
+                return true; // Can stack +2 on +2
+            }
+            if (pendingPenalty.type === 'Wild Draw Four' && card.value === 'Wild Draw Four') {
+                return true; // Can stack +4 on +4
+            }
+            return false; // Must draw if can't stack
+        }
+
         if (card.color === 'Black') return true;
         return card.color === currentColor || card.value === topCard.value;
     };
@@ -175,9 +189,20 @@ export default function UnoMultiplayer({ room: initialRoom, onFinish }) {
     };
 
     const handleDrawCard = async () => {
-        if (!isMyTurn) return;
+        if (!isMyTurn || hasDrawn) return; // Can't draw twice
         try {
             const updated = await UnoRoomService.drawCard(room.id);
+            setRoom(updated);
+            setError('');
+        } catch (e) {
+            setError(e.message);
+        }
+    };
+
+    const handlePassTurn = async () => {
+        if (!isMyTurn || !hasDrawn) return;
+        try {
+            const updated = await UnoRoomService.passTurn(room.id);
             setRoom(updated);
             setError('');
         } catch (e) {
@@ -322,20 +347,45 @@ export default function UnoMultiplayer({ room: initialRoom, onFinish }) {
                 <div
                     onClick={handleDrawCard}
                     style={{
+                        position: 'relative',
                         width: '70px',
                         height: '100px',
-                        background: 'linear-gradient(135deg, #c62828, #e53935)',
+                        background: pendingPenalty ? 'linear-gradient(135deg, #ff4444, #cc0000)' : 'linear-gradient(135deg, #c62828, #e53935)',
                         borderRadius: '10px',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         cursor: isMyTurn ? 'pointer' : 'not-allowed',
-                        boxShadow: isMyTurn ? '0 0 20px rgba(229, 57, 53, 0.5)' : 'none',
-                        border: '3px solid rgba(255,255,255,0.2)',
-                        transition: 'transform 0.2s'
+                        boxShadow: pendingPenalty ? '0 0 20px rgba(255, 68, 68, 0.6)' : (isMyTurn && !hasDrawn) ? '0 0 20px rgba(229, 57, 53, 0.5)' : 'none',
+                        border: pendingPenalty ? '3px solid #ff6666' : '3px solid rgba(255,255,255,0.2)',
+                        transition: 'all 0.3s',
+                        opacity: (hasDrawn && !pendingPenalty) ? 0.5 : 1,
+                        animation: pendingPenalty && isMyTurn ? 'pulse 1s infinite' : 'none'
                     }}
                 >
-                    <span style={{ fontSize: '1.5rem', color: 'white' }}>🃏</span>
+                    {/* Penalty Badge */}
+                    {pendingPenalty && (
+                        <div style={{
+                            position: 'absolute',
+                            top: '-10px',
+                            right: '-10px',
+                            background: '#ff4444',
+                            color: 'white',
+                            borderRadius: '50%',
+                            width: '30px',
+                            height: '30px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 'bold',
+                            fontSize: '14px',
+                            border: '2px solid white',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
+                        }}>
+                            +{pendingPenalty.count}
+                        </div>
+                    )}
+                    <span style={{ fontSize: '1.5rem', color: 'white' }}>{pendingPenalty ? '⚠️' : '🃏'}</span>
                 </div>
 
                 {/* Discard Pile */}
@@ -370,8 +420,30 @@ export default function UnoMultiplayer({ room: initialRoom, onFinish }) {
                 color: isMyTurn ? 'var(--primary)' : '#888',
                 animation: isMyTurn ? 'pulse 1.5s infinite' : 'none'
             }}>
-                {message}
+                {hasDrawn && isMyTurn ? 'Play the drawn card or Pass!' : message}
             </div>
+
+            {/* Pass Turn Button */}
+            {isMyTurn && hasDrawn && (
+                <button
+                    onClick={handlePassTurn}
+                    style={{
+                        padding: '10px 30px',
+                        marginBottom: '1rem',
+                        background: 'linear-gradient(135deg, #ff6b6b, #ee5a24)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '25px',
+                        fontSize: '1rem',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 15px rgba(238, 90, 36, 0.4)',
+                        animation: 'pulse 1.5s infinite'
+                    }}
+                >
+                    Pass Turn
+                </button>
+            )}
 
             {error && (
                 <div style={{ color: '#ff6b6b', marginBottom: '1rem' }}>{error}</div>

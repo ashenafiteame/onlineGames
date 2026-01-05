@@ -43,4 +43,15 @@ public class CheckersRoomController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+    @PostMapping("/{roomId}/replay")
+    public ResponseEntity<?> requestReplay(@PathVariable Long roomId, Authentication auth) {
+        try {
+            User user = userService.findByUsername(auth.getName()).orElseThrow();
+            GameRoom room = checkersRoomService.requestReplay(roomId, user);
+            return ResponseEntity.ok(room);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

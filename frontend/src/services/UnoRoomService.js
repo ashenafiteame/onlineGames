@@ -114,6 +114,19 @@ export const UnoRoomService = {
         return response.json();
     },
 
+    // Pass turn (after drawing a playable card)
+    passTurn: async (roomId) => {
+        const response = await fetch(`${API_URL}/rooms/${roomId}/pass`, {
+            method: 'POST',
+            headers: { 'Authorization': AuthService.getAuthHeader() }
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to pass turn');
+        }
+        return response.json();
+    },
+
     // Get user's active UNO rooms
     getMyRooms: async () => {
         const response = await fetch(`${API_URL}/my-rooms`, {

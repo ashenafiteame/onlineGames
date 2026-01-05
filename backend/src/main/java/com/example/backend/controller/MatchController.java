@@ -97,4 +97,15 @@ public class MatchController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    @PostMapping("/{matchId}/replay")
+    public ResponseEntity<?> replay(@PathVariable @org.springframework.lang.NonNull Long matchId,
+            Authentication auth) {
+        User user = userService.findByUsername(auth.getName()).get();
+        try {
+            return ResponseEntity.ok(matchService.requestReplay(matchId, user));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

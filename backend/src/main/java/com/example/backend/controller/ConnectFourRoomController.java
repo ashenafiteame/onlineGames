@@ -44,4 +44,15 @@ public class ConnectFourRoomController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+    @PostMapping("/{roomId}/replay")
+    public ResponseEntity<?> replay(@PathVariable Long roomId, Principal principal) {
+        try {
+            User user = userService.findByUsername(principal.getName()).orElseThrow();
+            GameRoom room = connectFourRoomService.requestReplay(roomId, user);
+            return ResponseEntity.ok(room);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

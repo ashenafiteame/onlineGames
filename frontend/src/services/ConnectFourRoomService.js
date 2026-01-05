@@ -34,5 +34,20 @@ export const ConnectFourRoomService = {
             throw new Error(error.error || 'Failed to make move');
         }
         return response.json();
+    },
+
+    requestReplay: async (roomId) => {
+        const response = await fetch(`${API_URL}/${roomId}/replay`, {
+            method: 'POST',
+            headers: {
+                'Authorization': AuthService.getAuthHeader(),
+                'Content-Type': 'application/json'
+            }
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to request replay');
+        }
+        return response.json();
     }
 };

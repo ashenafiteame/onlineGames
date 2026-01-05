@@ -34,4 +34,7 @@ public class GameMatch {
 
     private LocalDateTime createdAt;
     private LocalDateTime lastMoveAt;
+
+    private Boolean player1Replay = false;
+    private Boolean player2Replay = false;
 }

@@ -156,6 +156,8 @@ const Uno = ({ onFinish, highScore }) => {
     const [localHighScore, setLocalHighScore] = useState(highScore || 0);
     const [lastUpdatedUser, setLastUpdatedUser] = useState(null);
     const [showRules, setShowRules] = useState(false);
+    const [hasDrawn, setHasDrawn] = useState(false); // Track if player has drawn this turn
+    const [pendingPenalty, setPendingPenalty] = useState(null); // { type: 'Draw Two' | 'Wild Draw Four', count: number }
 
     // Wild Card Picker State
     const [pendingWildMove, setPendingWildMove] = useState(null); // { index, rect }
@@ -212,6 +214,8 @@ const Uno = ({ onFinish, highScore }) => {
         setAnimatingCard(null);
         setPendingWildMove(null);
         setShowRules(false);
+        setHasDrawn(false);
+        setPendingPenalty(null);
     };
 
     const drawCard = (playerId, count = 1) => {
@@ -245,6 +249,7 @@ const Uno = ({ onFinish, highScore }) => {
         const next = (turn + direction * (skip ? 2 : 1) + players.length) % players.length;
         const safeNext = (next < 0) ? next + players.length : next;
         setTurn(safeNext);
+        setHasDrawn(false); // Reset hasDrawn for next turn
 
         if (safeNext === 0) setMessage("Your Turn!");
         else setMessage(`${players[safeNext].name}'s Turn`);
@@ -252,6 +257,19 @@ const Uno = ({ onFinish, highScore }) => {
 
     const isValidMove = (card) => {
         const top = discardPile[discardPile.length - 1];
+
+        // If there's a pending penalty, only allow matching penalty cards
+        if (pendingPenalty) {
+            if (pendingPenalty.type === 'Draw Two' && card.value === 'Draw Two') {
+                return true; // Can stack +2 on +2
+            }
+            if (pendingPenalty.type === 'Wild Draw Four' && card.value === 'Wild Draw Four') {
+                return true; // Can stack +4 on +4
+            }
+            return false; // Must draw if can't stack
+        }
+
+        // Normal validation
         if (card.color === 'Black') return true;
         if (card.color === currentColor) return true;
         if (card.value === top.value) return true;
@@ -354,32 +372,56 @@ const Uno = ({ onFinish, highScore }) => {
         } else if (card.value === 'Skip') {
             skipTurn = true;
         } else if (card.value === 'Draw Two') {
-            const targetIndex = (turn + direction + players.length) % players.length;
-            const safeTarget = targetIndex < 0 ? targetIndex + players.length : targetIndex;
-            drawCard(safeTarget, 2);
-            skipTurn = true;
+            // Stack the penalty instead of immediate draw
+            const newCount = (pendingPenalty?.type === 'Draw Two' ? pendingPenalty.count : 0) + 2;
+            setPendingPenalty({ type: 'Draw Two', count: newCount });
+            // Don't skip - next player gets a chance to stack
         } else if (card.value === 'Wild Draw Four') {
-            const targetIndex = (turn + direction + players.length) % players.length;
-            const safeTarget = targetIndex < 0 ? targetIndex + players.length : targetIndex;
-            drawCard(safeTarget, 2); // BUG FIX: Was incorrectly drawing 2? No, previous code had 4. Wait, let me check. 
-            // Previous code said draw 4. I should ensure it's 4. Ah, the log showed 4.
-            // Let me maintain correctness. It should be 4.
-            drawCard(safeTarget, 4);
-            skipTurn = true;
+            // Stack the +4 penalty
+            const newCount = (pendingPenalty?.type === 'Wild Draw Four' ? pendingPenalty.count : 0) + 4;
+            setPendingPenalty({ type: 'Wild Draw Four', count: newCount });
+            // Don't skip - next player gets a chance to stack
         }
 
         nextTurn(skipTurn);
     };
 
     useEffect(() => {
-        if (!gameStarted || winner || players[turn].isBot === false || animatingCard || pendingWildMove) return; // Pause for modal
+        if (!gameStarted || winner || players[turn].isBot === false || animatingCard || pendingWildMove) return;
 
         const botTurnTimeout = setTimeout(() => {
             const bot = players[turn];
+
+            // If penalty is pending, bot must try to stack or draw
+            if (pendingPenalty) {
+                const stackableCards = bot.hand.filter(c => {
+                    if (pendingPenalty.type === 'Draw Two' && c.value === 'Draw Two') return true;
+                    if (pendingPenalty.type === 'Wild Draw Four' && c.value === 'Wild Draw Four') return true;
+                    return false;
+                });
+
+                if (stackableCards.length > 0) {
+                    // Bot stacks a penalty card
+                    const cardToPlay = stackableCards[0];
+                    const index = bot.hand.indexOf(cardToPlay);
+                    initiatePlayCard(turn, index);
+                } else {
+                    // Bot must draw the accumulated penalty
+                    drawCard(turn, pendingPenalty.count);
+                    setPendingPenalty(null);
+                    nextTurn();
+                }
+                return;
+            }
+
+            // Normal bot logic
             const playable = bot.hand.filter(c => isValidMove(c));
 
             if (playable.length > 0) {
                 playable.sort((a, b) => {
+                    // Prioritize penalty cards for stacking opportunities
+                    if (a.value === 'Draw Two' || a.value === 'Wild Draw Four') return -1;
+                    if (b.value === 'Draw Two' || b.value === 'Wild Draw Four') return 1;
                     if (a.color === 'Black') return 1;
                     if (b.color === 'Black') return -1;
                     if (a.type === 'special') return -1;
@@ -390,13 +432,22 @@ const Uno = ({ onFinish, highScore }) => {
                 const index = bot.hand.indexOf(cardToPlay);
                 initiatePlayCard(turn, index);
             } else {
-                drawCard(turn, 1);
-                nextTurn();
+                // Bot draws one card
+                const drawnCards = drawCard(turn, 1);
+                if (drawnCards.length > 0 && isValidMove(drawnCards[0])) {
+                    setTimeout(() => {
+                        const updatedBot = players[turn];
+                        const drawnCardIndex = updatedBot.hand.length - 1;
+                        initiatePlayCard(turn, drawnCardIndex);
+                    }, 800);
+                } else {
+                    nextTurn();
+                }
             }
         }, 1200);
 
         return () => clearTimeout(botTurnTimeout);
-    }, [turn, gameStarted, winner, players, currentColor, discardPile, animatingCard, pendingWildMove]);
+    }, [turn, gameStarted, winner, players, currentColor, discardPile, animatingCard, pendingWildMove, pendingPenalty]);
 
     const getCardStyle = (card) => {
         let bg = card.color;
@@ -669,11 +720,69 @@ const Uno = ({ onFinish, highScore }) => {
                     <div style={{ display: 'flex', gap: '50px', alignItems: 'center', perspective: '1000px', zIndex: 5, transform: discardPilePop ? 'scale(1.1)' : 'scale(1)', transition: 'transform 0.1s ease-out' }}>
                         <div
                             style={{
-                                width: '80px', height: '120px', background: '#1a1a1a', border: '3px solid #666', borderRadius: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', cursor: turn === 0 ? 'pointer' : 'default', boxShadow: '0 4px 8px rgba(0,0,0,0.6)', transform: turn === 0 ? 'scale(1.05)' : 'scale(1)', transition: 'transform 0.2s', fontSize: '14px', color: '#666'
+                                position: 'relative',
+                                width: '80px', height: '120px',
+                                background: pendingPenalty ? 'linear-gradient(135deg, #ff4444, #cc0000)' : '#1a1a1a',
+                                border: pendingPenalty ? '3px solid #ff6666' : '3px solid #666',
+                                borderRadius: '12px',
+                                display: 'flex', justifyContent: 'center', alignItems: 'center',
+                                cursor: turn === 0 ? 'pointer' : 'default',
+                                boxShadow: pendingPenalty ? '0 0 20px rgba(255, 68, 68, 0.6)' : '0 4px 8px rgba(0,0,0,0.6)',
+                                transform: turn === 0 ? 'scale(1.05)' : 'scale(1)',
+                                transition: 'all 0.3s',
+                                fontSize: '14px',
+                                color: pendingPenalty ? 'white' : '#666',
+                                animation: pendingPenalty && turn === 0 ? 'pulse 1s infinite' : 'none'
                             }}
-                            onClick={() => { if (turn === 0) { drawCard(0); nextTurn(); } }}
+                            onClick={() => {
+                                if (turn === 0) {
+                                    // If penalty is pending, must draw the accumulated penalty
+                                    if (pendingPenalty) {
+                                        drawCard(0, pendingPenalty.count);
+                                        setMessage(`Drew ${pendingPenalty.count} cards!`);
+                                        setPendingPenalty(null);
+                                        setTimeout(() => nextTurn(), 1000);
+                                        return;
+                                    }
+
+                                    // Normal draw logic
+                                    if (!hasDrawn) {
+                                        const drawnCards = drawCard(0, 1);
+                                        setHasDrawn(true);
+                                        if (drawnCards.length > 0 && isValidMove(drawnCards[0])) {
+                                            setMessage("Drew a playable card! Play it or Pass.");
+                                        } else {
+                                            setMessage("No playable card. Passing...");
+                                            setTimeout(() => nextTurn(), 1000);
+                                        }
+                                    }
+                                }
+                            }}
                         >
-                            <div style={{ transform: 'rotate(45deg)', fontSize: '24px' }}>UNO</div>
+                            {/* Penalty Badge */}
+                            {pendingPenalty && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '-10px',
+                                    right: '-10px',
+                                    background: '#ff4444',
+                                    color: 'white',
+                                    borderRadius: '50%',
+                                    width: '35px',
+                                    height: '35px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontWeight: 'bold',
+                                    fontSize: '16px',
+                                    border: '2px solid white',
+                                    boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                                    animation: 'pulse 1s infinite'
+                                }}>
+                                    +{pendingPenalty.count}
+                                </div>
+                            )}
+                            <div style={{ transform: 'rotate(45deg)', fontSize: '24px' }}>{pendingPenalty ? '⚠️' : 'UNO'}</div>
                         </div>
 
                         {discardPile.length > 0 && (
@@ -689,6 +798,32 @@ const Uno = ({ onFinish, highScore }) => {
                     </div>
 
                     <div style={getMessageStyle()}>{message}</div>
+
+                    {/* Pass Button - appears after drawing a playable card */}
+                    {turn === 0 && hasDrawn && players[0]?.hand.some(c => isValidMove(c)) && (
+                        <button
+                            onClick={() => nextTurn()}
+                            style={{
+                                position: 'absolute',
+                                bottom: '28%',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
+                                padding: '10px 30px',
+                                background: 'linear-gradient(135deg, #ff6b6b, #ee5a24)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '25px',
+                                fontSize: '1rem',
+                                fontWeight: 'bold',
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 15px rgba(238, 90, 36, 0.4)',
+                                zIndex: 50,
+                                animation: 'pulse 1.5s infinite'
+                            }}
+                        >
+                            Pass Turn
+                        </button>
+                    )}
 
                     {animatingCard && (
                         <div style={{

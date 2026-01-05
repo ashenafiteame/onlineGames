@@ -28,7 +28,10 @@ public class RoomController {
             String gameType = (String) body.get("gameType");
             int maxPlayers = (int) body.getOrDefault("maxPlayers", 2);
 
-            GameRoom room = roomService.createRoom(user, gameType, maxPlayers);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> settings = (Map<String, Object>) body.get("settings");
+
+            GameRoom room = roomService.createRoom(user, gameType, maxPlayers, settings);
             return ResponseEntity.ok(room);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

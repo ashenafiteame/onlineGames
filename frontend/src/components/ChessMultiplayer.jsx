@@ -241,15 +241,28 @@ export default function ChessMultiplayer({ room, onFinish }) {
         <div style={{ textAlign: 'center', userSelect: 'none', position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <button onClick={() => onFinish(null)} style={{ alignSelf: 'flex-start', marginBottom: '1rem', background: '#333', border: 'none', color: 'white', padding: '8px 16px', borderRadius: '4px', cursor: 'pointer' }}>Exit</button>
 
-            <h2 style={{ color: isMyTurn() && !gameState.winner ? '#4CAF50' : 'white' }}>
-                {gameState.winner ? winnerMessage() : (isMyTurn() ? "Your Turn" : `Waiting for ${players[gameState.turn === 'white' ? 'white' : 'black']}...`)}
+            <h2 style={{
+                color: 'white',
+                marginBottom: '1rem',
+                textShadow: '0 2px 4px rgba(0,0,0,0.5)',
+                fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+            }}>
+                {gameState.winner ? (
+                    <span style={{ color: gameState.winner === getMyColor() ? '#4CAF50' : '#f44336', fontSize: '2rem' }}>{winnerMessage()}</span>
+                ) : (
+                    isMyTurn() ? <span style={{ color: '#4CAF50', fontSize: '1.5rem' }}>Your Turn</span> :
+                        <span style={{ color: '#bbb' }}>Waiting for {players[gameState.turn === 'white' ? 'white' : 'black']}...</span>
+                )}
             </h2>
 
+            {/* Session stats or captured pieces could go here */}
+
             <div style={{
-                display: 'inline-block', padding: '12px', background: '#3d2817', borderRadius: '12px',
-                boxShadow: '0 15px 40px rgba(0,0,0,0.6)',
+                display: 'inline-block', padding: '16px', background: '#3d2817', borderRadius: '8px',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.5)',
                 transform: shouldRotate() ? 'rotate(180deg)' : 'none',
-                marginTop: '1rem'
+                marginTop: '1rem',
+                border: '4px solid #2a1b0e'
             }}>
                 {board.map((row, r) => (
                     <div key={r} style={{ display: 'flex' }}>
@@ -259,26 +272,48 @@ export default function ChessMultiplayer({ room, onFinish }) {
                             const isSel = selected?.r === r && selected?.c === c;
                             const isLastMove = lastMove && ((lastMove.from.r === r && lastMove.from.c === c) || (lastMove.to.r === r && lastMove.to.c === c));
 
-                            let bgColor = isSel ? '#7B68EE' : (isLastMove ? (isLight ? '#F6F669' : '#BACA2B') : (isLight ? '#EEEED2' : '#769656'));
+                            // Classic Wood Theme
+                            let bgColor = isSel ? '#BBCB2B' : // Selected Green/Yellow
+                                (isLastMove ? (isLight ? '#F7EC74' : '#DAC34A') : // Last Move Highlight
+                                    (isLight ? '#F0D9B5' : '#B58863')); // Light/Dark Wood
 
                             return (
                                 <div
                                     key={c}
                                     onClick={() => handleSquareClick(r, c)}
                                     style={{
-                                        width: '60px', height: '60px',
+                                        width: '75px', height: '75px', // Larger squares
                                         background: bgColor,
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         cursor: 'pointer', position: 'relative',
-                                        fontSize: '3rem',
                                         transform: shouldRotate() ? 'rotate(180deg)' : 'none'
                                     }}
                                 >
-                                    {isValid && <div style={{ position: 'absolute', width: '20px', height: '20px', borderRadius: '50%', background: 'rgba(0,180,0,0.6)' }} />}
+                                    {/* Valid Move Marker */}
+                                    {isValid && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            width: '24px', height: '24px',
+                                            borderRadius: '50%',
+                                            background: cell === EMPTY ? 'rgba(100, 120, 50, 0.4)' : 'rgba(200, 50, 50, 0.6)',
+                                            border: cell === EMPTY ? 'none' : '4px solid rgba(255,255,255,0.6)', // Ring for capture
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                                        }} />
+                                    )}
+
+                                    {/* Coordinate Labels (optional, simplified) */}
+                                    {c === 0 && r === 7 && <span style={{ position: 'absolute', left: '2px', bottom: '0', fontSize: '10px', color: isLight ? '#b58863' : '#f0d9b5', fontWeight: 'bold' }}>a1</span>}
+
                                     {cell !== EMPTY && (
                                         <span style={{
-                                            color: isWhitePiece(cell) ? '#FFFFFF' : '#1a1a1a',
-                                            textShadow: isWhitePiece(cell) ? '1px 1px 2px #000' : 'none'
+                                            color: isWhitePiece(cell) ? '#ffffff' : '#111111',
+                                            fontSize: '4.5rem',
+                                            lineHeight: 1,
+                                            // Enhanced visibility
+                                            filter: isWhitePiece(cell)
+                                                ? 'drop-shadow(0 4px 3px rgba(0,0,0,0.6))'
+                                                : 'drop-shadow(0 2px 2px rgba(255,255,255,0.4))',
+                                            transition: 'transform 0.1s'
                                         }}>
                                             {PIECE_SYMBOLS[cell]}
                                         </span>
@@ -288,6 +323,10 @@ export default function ChessMultiplayer({ room, onFinish }) {
                         })}
                     </div>
                 ))}
+            </div>
+
+            <div style={{ marginTop: '1rem', color: '#888', fontStyle: 'italic', fontSize: '0.9rem' }}>
+                Captured: Red/White indicators would go here
             </div>
         </div>
     );

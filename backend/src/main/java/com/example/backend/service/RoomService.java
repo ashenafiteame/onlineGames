@@ -21,9 +21,36 @@ public class RoomService {
     @Autowired
     private ObjectMapper objectMapper;
 
-    // Create a new room
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    private ConnectFourRoomService connectFourRoomService;
+
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    private TicTacToeRoomService ticTacToeRoomService;
+
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    private CheckersRoomService checkersRoomService;
+
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    private ChessRoomService chessRoomService;
+
+    @Autowired
+    @org.springframework.context.annotation.Lazy
+    private UnoRoomService unoRoomService;
+
+    // Create a new room (default settings)
     @Transactional
     public GameRoom createRoom(User host, String gameType, int maxPlayers) throws Exception {
+        return createRoom(host, gameType, maxPlayers, new HashMap<>());
+    }
+
+    // Create a new room with settings
+    @Transactional
+    public GameRoom createRoom(User host, String gameType, int maxPlayers, Map<String, Object> settings)
+            throws Exception {
         GameRoom room = new GameRoom();
         room.setGameType(gameType);
         room.setInviteCode(generateInviteCode());
@@ -42,6 +69,11 @@ public class RoomService {
         room.setPlayers(objectMapper.writeValueAsString(players));
         room.setSessionWins("{}");
         room.setGamesPlayed(0);
+
+        // Save settings (e.g. variant)
+        if (settings == null)
+            settings = new HashMap<>();
+        room.setSettings(objectMapper.writeValueAsString(settings));
 
         return roomRepository.save(room);
     }
@@ -78,7 +110,29 @@ public class RoomService {
             room.setPlayers(objectMapper.writeValueAsString(players));
         }
 
-        return roomRepository.save(room);
+        // Save the room first with the new player
+        room = roomRepository.save(room);
+
+        // Check if now full, if so, auto-start
+        if (players.size() >= room.getMaxPlayers()) {
+            User host = room.getHost();
+            String gameType = room.getGameType().toLowerCase();
+
+            // Normalize game type string if needed (Uno usually sends "UNO")
+            if (gameType.equals("uno")) {
+                return unoRoomService.startGame(room.getId(), host);
+            } else if (gameType.equals("tictactoe")) {
+                return ticTacToeRoomService.startGame(room.getId(), host);
+            } else if (gameType.equals("connectfour")) {
+                return connectFourRoomService.startGame(room.getId(), host);
+            } else if (gameType.equals("checkers")) {
+                return checkersRoomService.startGame(room.getId(), host);
+            } else if (gameType.equals("chess")) {
+                return chessRoomService.startGame(room.getId(), host);
+            }
+        }
+
+        return room;
     }
 
     // Leave room

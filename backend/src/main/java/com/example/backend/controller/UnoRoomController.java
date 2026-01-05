@@ -131,6 +131,18 @@ public class UnoRoomController {
         }
     }
 
+    // Pass turn (after drawing a playable card)
+    @PostMapping("/rooms/{roomId}/pass")
+    public ResponseEntity<?> passTurn(@PathVariable Long roomId, Authentication auth) {
+        try {
+            User user = userService.findByUsername(auth.getName()).orElseThrow();
+            GameRoom room = unoRoomService.passTurn(roomId, user);
+            return ResponseEntity.ok(room);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     // Get user's active rooms
     @GetMapping("/my-rooms")
     public ResponseEntity<?> getMyRooms(Authentication auth) {

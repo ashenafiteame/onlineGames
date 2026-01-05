@@ -87,5 +87,14 @@ export const MatchService = {
         });
         if (!response.ok) throw new Error('Failed to forfeit match');
         return response.json();
+    },
+
+    requestReplay: async (matchId) => {
+        const response = await fetch(`${API_URL}/${matchId}/replay`, {
+            method: 'POST',
+            headers: { 'Authorization': AuthService.getAuthHeader() }
+        });
+        if (!response.ok) throw new Error('Failed to request replay');
+        return response.json();
     }
 };

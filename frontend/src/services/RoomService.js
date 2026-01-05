@@ -5,14 +5,14 @@ const API_URL = `${API_BASE_URL}/api/rooms`;
 
 export const RoomService = {
     // Create a new room
-    createRoom: async (gameType, maxPlayers) => {
+    createRoom: async (gameType, maxPlayers, settings = {}) => {
         const response = await fetch(`${API_URL}/create`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': AuthService.getAuthHeader()
             },
-            body: JSON.stringify({ gameType, maxPlayers })
+            body: JSON.stringify({ gameType, maxPlayers, settings })
         });
         if (!response.ok) {
             const error = await response.json();
